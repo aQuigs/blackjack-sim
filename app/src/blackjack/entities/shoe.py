@@ -1,4 +1,3 @@
-from typing import List
 import random
 from app.src.blackjack.entities.card import Card
 from app.src.blackjack.entities.deck_schema import DeckSchema

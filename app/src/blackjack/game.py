@@ -1,8 +1,8 @@
+import logging
 from app.src.blackjack.entities.player import Player
 from app.src.blackjack.entities.shoe import Shoe
 from app.src.blackjack.rules.base import Rules
 from app.src.blackjack.action import Action
-import logging
 
 
 class Game:
@@ -42,12 +42,12 @@ class Game:
                 break
             else:
                 logging.critical(
-                    f"No valid action available for player {player.name} with hand {player.hand.cards}. "
-                    f"Available actions: {actions}"
+                    f"No valid action available for player {player.name} "
+                    f"with hand {player.hand.cards}. Available actions: {actions}"
                 )
                 raise RuntimeError(
-                    f"No valid action available for player {player.name} with hand {player.hand.cards}. "
-                    f"Available actions: {actions}"
+                    f"No valid action available for player {player.name} "
+                    f"with hand {player.hand.cards}. Available actions: {actions}"
                 )
 
     def play_dealer_turn(self):
