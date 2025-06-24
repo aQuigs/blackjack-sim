@@ -16,10 +16,11 @@ def main(printable: bool = True):
     rules = StandardBlackjackRules()
     strategy = RandomStrategy()
     dealer_strategy = StandardDealerStrategy()
-    game = Game(num_players, shoe, rules, dealer_strategy)
+    player_strategies = [strategy for _ in range(num_players)]
+    game = Game(player_strategies, shoe, rules, dealer_strategy)
 
     # Play a round using the new interface
-    game.play_round([strategy for _ in range(num_players)])
+    game.play_round()
 
     if printable:
         for i, player in enumerate(game.players):

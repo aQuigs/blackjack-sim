@@ -23,10 +23,12 @@ class AlwaysHitStrategy(Strategy):
 
 
 def test_player_initialization():
-    player = Player("Alice")
+    strategy = AlwaysStandStrategy()
+    player = Player("Alice", strategy)
     assert player.name == "Alice"
     assert isinstance(player.hand, Hand)
     assert player.hand.cards == []
+    assert player.strategy == strategy
 
 
 def test_game_all_players_bust():
@@ -35,9 +37,9 @@ def test_game_all_players_bust():
     shoe = Shoe(deck_schema, num_decks=1)
     rules = StandardBlackjackRules()
     dealer_strategy = StandardDealerStrategy()
-    game = Game(2, shoe, rules, dealer_strategy)
-    strategies = [AlwaysHitStrategy(), AlwaysHitStrategy()]
-    game.play_round(strategies)
+    player_strategies = [AlwaysHitStrategy(), AlwaysHitStrategy()]
+    game = Game(player_strategies, shoe, rules, dealer_strategy)
+    game.play_round()
     assert all(rules.is_bust(player.hand) for player in game.players)
     # Dealer should not draw any additional cards after initial deal
     assert len(game.dealer.hand.cards) == 2
@@ -64,9 +66,9 @@ def test_game_all_players_blackjack():
     shoe.deal_card = deal_card_patch
     rules = StandardBlackjackRules()
     dealer_strategy = StandardDealerStrategy()
-    game = Game(2, shoe, rules, dealer_strategy)
-    strategies = [AlwaysStandStrategy(), AlwaysStandStrategy()]
-    game.play_round(strategies)
+    player_strategies = [AlwaysStandStrategy(), AlwaysStandStrategy()]
+    game = Game(player_strategies, shoe, rules, dealer_strategy)
+    game.play_round()
     assert all(rules.is_blackjack(player.hand) for player in game.players)
     # Dealer should not draw any additional cards after initial deal
     assert len(game.dealer.hand.cards) == 2
@@ -78,14 +80,18 @@ def test_game_dealer_plays_if_needed():
     shoe = Shoe(deck_schema, num_decks=1)
     rules = StandardBlackjackRules()
     dealer_strategy = StandardDealerStrategy()
-    game = Game(1, shoe, rules, dealer_strategy)
-    strategies = [AlwaysStandStrategy()]
-    game.play_round(strategies)
+    player_strategies = [AlwaysStandStrategy()]
+    game = Game(player_strategies, shoe, rules, dealer_strategy)
+    game.play_round()
     # Dealer should have more than 2 cards if they hit
     assert len(game.dealer.hand.cards) >= 2
 
 
 def test_player_wins_when_dealer_busts(caplog):
+    class StandStrategy(Strategy):
+        def choose_action(self, hand, available_actions, game_state):
+            return Action.STAND
+
     deck_schema = StandardBlackjackSchema()
     shoe = Shoe(deck_schema, num_decks=1)
     # Stack the shoe so player stands on 7, dealer busts with 22
@@ -105,15 +111,11 @@ def test_player_wins_when_dealer_busts(caplog):
     shoe.deal_card = deal_card_patch
     rules = StandardBlackjackRules()
     dealer_strategy = StandardDealerStrategy()
-    game = Game(1, shoe, rules, dealer_strategy)
+    player_strategies = [StandStrategy()]
+    game = Game(player_strategies, shoe, rules, dealer_strategy)
 
-    class StandStrategy(Strategy):
-        def choose_action(self, hand, available_actions, game_state):
-            return Action.STAND
-
-    strategy = StandStrategy()
     with caplog.at_level("INFO"):
-        game.play_round([strategy])
+        game.play_round()
     # Player should not bust
     assert not rules.is_bust(game.players[0].hand)
     # Dealer should bust
@@ -123,9 +125,24 @@ def test_player_wins_when_dealer_busts(caplog):
 
 
 def test_player_str_and_repr():
-    player = Player("TestPlayer")
+    strategy = AlwaysStandStrategy()
+    player = Player("TestPlayer", strategy)
     assert str(player) == "TestPlayer: []"
     assert "Player(name='TestPlayer', hand=Hand([]))" in repr(player)
+
+
+def test_player_rejects_none_strategy():
+    with pytest.raises(ValueError, match="Strategy cannot be None"):
+        Player("TestPlayer", None)
+
+
+def test_player_strategy_setter_accepts_valid_strategy():
+    strategy1 = AlwaysStandStrategy()
+    strategy2 = AlwaysHitStrategy()
+    player = Player("TestPlayer", strategy1)
+    assert player.strategy == strategy1
+    player.strategy = strategy2
+    assert player.strategy == strategy2
 
 
 def test_hand_str_and_repr():
@@ -151,7 +168,8 @@ def test_game_play_turn_invalid_action():
     shoe = Shoe(deck_schema, num_decks=1)
     rules = StandardBlackjackRules()
     dealer_strategy = StandardDealerStrategy()
-    game = Game(1, shoe, rules, dealer_strategy)
+    player_strategies = [AlwaysHitStrategy()]
+    game = Game(player_strategies, shoe, rules, dealer_strategy)
 
     class InvalidStrategy(Strategy):
         def choose_action(self, hand, available_actions, game_state):
@@ -170,7 +188,8 @@ def test_game_no_available_actions():
     shoe = Shoe(deck_schema, num_decks=1)
     rules = StandardBlackjackRules()
     dealer_strategy = StandardDealerStrategy()
-    game = Game(1, shoe, rules, dealer_strategy)
+    player_strategies = [AlwaysHitStrategy()]
+    game = Game(player_strategies, shoe, rules, dealer_strategy)
 
     class NoActionStrategy(Strategy):
         def choose_action(self, hand, available_actions, game_state):
@@ -188,13 +207,12 @@ def test_game_all_players_bust_or_blackjack():
     shoe = Shoe(deck_schema, num_decks=1)
     rules = StandardBlackjackRules()
     dealer_strategy = StandardDealerStrategy()
-    game = Game(2, shoe, rules, dealer_strategy)
+    player_strategies = [AlwaysHitStrategy(), AlwaysHitStrategy()]
+    game = Game(player_strategies, shoe, rules, dealer_strategy)
     # Patch rules to force all players to bust or blackjack
     rules.is_bust = lambda hand: True
     rules.is_blackjack = lambda hand: False
-    strategies = [StandardDealerStrategy(), StandardDealerStrategy()]
-    # Dealer should not play
-    game.play_round(strategies)
+    game.play_round()
 
 
 def test_game_dealer_no_available_actions(caplog):
@@ -202,7 +220,8 @@ def test_game_dealer_no_available_actions(caplog):
     shoe = Shoe(deck_schema, num_decks=1)
     rules = StandardBlackjackRules()
     dealer_strategy = StandardDealerStrategy()
-    game = Game(1, shoe, rules, dealer_strategy)
+    player_strategies = [AlwaysHitStrategy()]
+    game = Game(player_strategies, shoe, rules, dealer_strategy)
     # Patch rules to return no actions for dealer
     rules.available_actions = lambda hand, gs: []
     with caplog.at_level("INFO"):
@@ -215,7 +234,8 @@ def test_game_dealer_invalid_action_error():
     shoe = Shoe(deck_schema, num_decks=1)
     rules = StandardBlackjackRules()
     dealer_strategy = StandardDealerStrategy()
-    game = Game(1, shoe, rules, dealer_strategy)
+    player_strategies = [AlwaysHitStrategy()]
+    game = Game(player_strategies, shoe, rules, dealer_strategy)
 
     class InvalidStrategy(Strategy):
         def choose_action(self, hand, available_actions, game_state):

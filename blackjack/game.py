@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import Sequence
 
 from blackjack.action import Action
 from blackjack.entities.player import Player
@@ -9,11 +9,11 @@ from blackjack.strategy.base import Strategy
 
 
 class Game:
-    def __init__(self, num_players: int, shoe: Shoe, rules: Rules, dealer_strategy: Strategy):
+    def __init__(self, player_strategies: Sequence[Strategy], shoe: Shoe, rules: Rules, dealer_strategy: Strategy):
         self.shoe = shoe
         self.rules = rules
-        self.players = [Player(f"Player {i+1}") for i in range(num_players)]
-        self.dealer = Player("Dealer")
+        self.players = [Player(f"Player {i+1}", strategy) for i, strategy in enumerate(player_strategies)]
+        self.dealer = Player("Dealer", dealer_strategy)
         self.dealer_strategy = dealer_strategy
 
     def initial_deal(self):
@@ -62,13 +62,13 @@ class Game:
                     f"No valid action available for {name} with hand {player.hand.cards}. Available actions: {actions}"
                 )
 
-    def play_round(self, strategies: List[Strategy]):
-        if len(strategies) != len(self.players):
-            raise ValueError("Number of strategies must match number of players.")
+    def play_round(self):
         self.initial_deal()
         player_results = []
-        for player, strategy in zip(self.players, strategies):
-            self.play_turn(player, strategy, player.name)
+        for player in self.players:
+            if player.strategy is None:
+                raise ValueError(f"Player {player.name} has no strategy assigned.")
+            self.play_turn(player, player.strategy, player.name)
             player_results.append(
                 {
                     "bust": self.rules.is_bust(player.hand),
