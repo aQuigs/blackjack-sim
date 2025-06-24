@@ -10,6 +10,9 @@ class HandValue:
     def __repr__(self):
         return f"HandValue(value={self.value}, soft={self.soft})"
 
+    def __str__(self):
+        return f"{self.value}{', soft' if self.soft else ''}"
+
 
 class Rules:
     def hand_value(self, hand: Hand) -> HandValue:

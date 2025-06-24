@@ -31,50 +31,25 @@ class Game:
         while True:
             hv = self.rules.hand_value(player.hand)
             if self.rules.is_bust(player.hand):
-                hand_str = [str(card) for card in player.hand.cards]
-                msg = (
-                    f"{player.name} busts with hand: {hand_str} "
-                    f"({hv.value}{', soft' if hv.soft else ''})"
-                )
-                logging.info(msg)
+                logging.info(f"{player.name} busts with hand: {player.hand} ({hv})")
                 break
             actions = self.rules.available_actions(player.hand, {})
             if not actions:
-                msg = (
-                    f"{player.name} has no available actions with hand: "
-                    f"{[str(card) for card in player.hand.cards]} "
-                    f"({hv.value}{', soft' if hv.soft else ''})"
-                )
-                logging.info(msg)
+                logging.info(f"{player.name} has no available actions with hand: {player.hand} ({hv})")
                 break
             action = strategy.choose_action(player.hand, actions, {})
-            msg = (
-                f"{player.name} chooses action: {action.name} with hand: "
-                f"{[str(card) for card in player.hand.cards]} "
-                f"({hv.value}{', soft' if hv.soft else ''})"
-            )
-            logging.info(msg)
+            logging.info(f"{player.name} chooses {action.name} with hand: {player.hand} ({hv})")
             if action == Action.HIT:
                 try:
                     card = self.shoe.deal_card()
                     player.hand.add_card(card)
                     hv_new = self.rules.hand_value(player.hand)
-                    msg = (
-                        f"{player.name} hits and receives: {card}. New hand: "
-                        f"{[str(c) for c in player.hand.cards]} "
-                        f"({hv_new.value}{', soft' if hv_new.soft else ''})"
-                    )
-                    logging.info(msg)
+                    logging.info(f"{player.name} receives: {card}. New hand: {player.hand} ({hv_new})")
                 except ValueError as e:
                     logging.error(f"Error dealing to player {player.name}: {e}")
                     break
             elif action == Action.STAND:
-                msg = (
-                    f"{player.name} stands with hand: "
-                    f"{[str(card) for card in player.hand.cards]} "
-                    f"({hv.value}{', soft' if hv.soft else ''})"
-                )
-                logging.info(msg)
+                logging.info(f"{player.name} stands with hand: {player.hand} ({hv})")
                 break
             else:
                 logging.critical(
@@ -92,22 +67,12 @@ class Game:
                 card = self.shoe.deal_card()
                 self.dealer.hand.add_card(card)
                 hv = self.rules.hand_value(self.dealer.hand)
-                msg = (
-                    f"Dealer hits and receives: {card}. New hand: "
-                    f"{[str(c) for c in self.dealer.hand.cards]} "
-                    f"({hv.value}{', soft' if hv.soft else ''})"
-                )
-                logging.info(msg)
+                logging.info(f"Dealer receives: {card}. New hand: {self.dealer.hand} ({hv})")
             except ValueError as e:
                 logging.error(f"Error dealing to dealer: {e}")
                 break
         hv = self.rules.hand_value(self.dealer.hand)
-        msg = (
-            f"Dealer stands with hand: "
-            f"{[str(card) for card in self.dealer.hand.cards]} "
-            f"({hv.value}{', soft' if hv.soft else ''})"
-        )
-        logging.info(msg)
+        logging.info(f"Dealer stands with hand: {self.dealer.hand} ({hv})")
 
     def play_round(self, strategies: List[PlayerStrategy]):
         if len(strategies) != len(self.players):
