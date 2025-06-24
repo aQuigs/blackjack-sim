@@ -1,13 +1,8 @@
 from app.src.blackjack.entities.player import Player
 from app.src.blackjack.entities.shoe import Shoe
 from app.src.blackjack.rules.base import Rules
-from enum import Enum, auto
+from app.src.blackjack.action import Action
 import logging
-
-
-class Action(Enum):
-    HIT = auto()
-    STAND = auto()
 
 
 class Game:

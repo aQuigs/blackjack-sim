@@ -1,5 +1,5 @@
 from app.src.blackjack.entities.hand import Hand
-from app.src.blackjack.game import Action
+from app.src.blackjack.action import Action
 
 
 class PlayerStrategy:

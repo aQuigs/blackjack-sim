@@ -1,7 +1,7 @@
 import random
 from app.src.blackjack.strategy.base import PlayerStrategy
 from app.src.blackjack.entities.hand import Hand
-from app.src.blackjack.game import Action
+from app.src.blackjack.action import Action
 
 
 class RandomStrategy(PlayerStrategy):
