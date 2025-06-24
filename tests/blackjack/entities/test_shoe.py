@@ -1,7 +1,8 @@
 import pytest
-from app.src.blackjack.entities.shoe import Shoe
-from app.src.blackjack.entities.deck_schema import StandardBlackjackSchema
+
 from app.src.blackjack.entities.card import Card
+from app.src.blackjack.entities.deck_schema import StandardBlackjackSchema
+from app.src.blackjack.entities.shoe import Shoe
 
 
 def test_shoe_initialization_and_cards_left():

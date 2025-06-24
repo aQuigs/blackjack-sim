@@ -1,5 +1,5 @@
-from app.src.blackjack.entities.player import Player
 from app.src.blackjack.entities.hand import Hand
+from app.src.blackjack.entities.player import Player
 
 
 def test_player_initialization():

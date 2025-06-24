@@ -1,8 +1,9 @@
 import logging
+
+from app.src.blackjack.action import Action
 from app.src.blackjack.entities.player import Player
 from app.src.blackjack.entities.shoe import Shoe
 from app.src.blackjack.rules.base import Rules
-from app.src.blackjack.action import Action
 
 
 class Game:

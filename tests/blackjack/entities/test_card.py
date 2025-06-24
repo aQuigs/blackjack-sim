@@ -1,4 +1,5 @@
 import pytest
+
 from app.src.blackjack.entities.card import Card
 
 

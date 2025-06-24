@@ -22,6 +22,7 @@ repos:
       - id: trailing-whitespace
       - id: mixed-line-ending
       - id: check-added-large-files
+      - id: requirements-txt-fixer
   - repo: https://github.com/psf/black
     rev: 24.3.0
     hooks:
@@ -46,3 +47,11 @@ repos:
         pass_filenames: false
         always_run: true
         verbose: true
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
