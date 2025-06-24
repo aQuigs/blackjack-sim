@@ -19,3 +19,9 @@ def test_card_invalid_rank():
 def test_card_invalid_suit():
     with pytest.raises(ValueError):
         Card("A", "X")
+
+
+def test_card_str_and_repr():
+    card = Card("A", "♠")
+    assert str(card) == "A♠"
+    assert "Card(rank='A', suit='♠')" in repr(card)

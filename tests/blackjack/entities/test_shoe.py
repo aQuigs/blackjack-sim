@@ -30,3 +30,11 @@ def test_shoe_deal_card_and_depletion():
     assert shoe.cards_left() == 0
     with pytest.raises(ValueError):
         shoe.deal_card()
+
+
+def test_shoe_cards_left():
+    schema = StandardBlackjackSchema()
+    shoe = Shoe(schema, num_decks=1)
+    assert shoe.cards_left() == 52
+    shoe.deal_card()
+    assert shoe.cards_left() == 51

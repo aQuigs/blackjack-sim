@@ -15,3 +15,12 @@ def test_hand_add_card():
     card2 = Card("A", "♠")
     hand.add_card(card2)
     assert hand.cards == [card, card2]
+
+
+def test_hand_str_and_repr():
+    hand = Hand()
+    assert str(hand) == "[]"
+    assert "Hand([])" in repr(hand)
+    hand.add_card(Card("A", "♠"))
+    assert str(hand) == "[A♠]"
+    assert "Hand([Card(rank='A', suit='♠')])" in repr(hand)

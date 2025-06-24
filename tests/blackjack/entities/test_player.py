@@ -1,3 +1,5 @@
+import pytest
+
 from blackjack.action import Action
 from blackjack.entities.card import Card
 from blackjack.entities.deck_schema import StandardBlackjackSchema
@@ -118,3 +120,109 @@ def test_player_wins_when_dealer_busts(caplog):
     assert rules.is_bust(game.dealer.hand)
     # Check log for correct bust message
     assert any("Dealer busts with hand" in r for r in caplog.messages)
+
+
+def test_player_str_and_repr():
+    player = Player("TestPlayer")
+    assert str(player) == "TestPlayer: []"
+    assert "Player(name='TestPlayer', hand=Hand([]))" in repr(player)
+
+
+def test_hand_str_and_repr():
+    hand = Hand()
+    assert str(hand) == "[]"
+    assert "Hand([])" in repr(hand)
+    hand.add_card(Card("A", "♠"))
+    assert str(hand) == "[A♠]"
+    assert "Hand([Card(rank='A', suit='♠')])" in repr(hand)
+
+
+def test_simulation_init_and_run():
+    from blackjack.simulation import Simulation
+
+    sim = Simulation(1)
+    assert sim.num_games == 1
+    assert sim.results == []
+    assert sim.run() is None
+
+
+def test_game_play_turn_invalid_action():
+    deck_schema = StandardBlackjackSchema()
+    shoe = Shoe(deck_schema, num_decks=1)
+    rules = StandardBlackjackRules()
+    dealer_strategy = StandardDealerStrategy()
+    game = Game(1, shoe, rules, dealer_strategy)
+
+    class InvalidStrategy(Strategy):
+        def choose_action(self, hand, available_actions, game_state):
+            class FakeAction:
+                name = "INVALID"
+
+            return FakeAction()
+
+    player = game.players[0]
+    with pytest.raises(RuntimeError):
+        game.play_turn(player, InvalidStrategy(), player.name)
+
+
+def test_game_no_available_actions():
+    deck_schema = StandardBlackjackSchema()
+    shoe = Shoe(deck_schema, num_decks=1)
+    rules = StandardBlackjackRules()
+    dealer_strategy = StandardDealerStrategy()
+    game = Game(1, shoe, rules, dealer_strategy)
+
+    class NoActionStrategy(Strategy):
+        def choose_action(self, hand, available_actions, game_state):
+            return available_actions[0] if available_actions else None
+
+    # Patch rules to return no actions
+    rules.available_actions = lambda hand, gs: []
+    player = game.players[0]
+    # Should not raise, just log and break
+    game.play_turn(player, NoActionStrategy(), player.name)
+
+
+def test_game_all_players_bust_or_blackjack():
+    deck_schema = StandardBlackjackSchema()
+    shoe = Shoe(deck_schema, num_decks=1)
+    rules = StandardBlackjackRules()
+    dealer_strategy = StandardDealerStrategy()
+    game = Game(2, shoe, rules, dealer_strategy)
+    # Patch rules to force all players to bust or blackjack
+    rules.is_bust = lambda hand: True
+    rules.is_blackjack = lambda hand: False
+    strategies = [StandardDealerStrategy(), StandardDealerStrategy()]
+    # Dealer should not play
+    game.play_round(strategies)
+
+
+def test_game_dealer_no_available_actions(caplog):
+    deck_schema = StandardBlackjackSchema()
+    shoe = Shoe(deck_schema, num_decks=1)
+    rules = StandardBlackjackRules()
+    dealer_strategy = StandardDealerStrategy()
+    game = Game(1, shoe, rules, dealer_strategy)
+    # Patch rules to return no actions for dealer
+    rules.available_actions = lambda hand, gs: []
+    with caplog.at_level("INFO"):
+        game.play_turn(game.dealer, dealer_strategy, "Dealer")
+    assert any("Dealer has no available actions" in r for r in caplog.messages)
+
+
+def test_game_dealer_invalid_action_error():
+    deck_schema = StandardBlackjackSchema()
+    shoe = Shoe(deck_schema, num_decks=1)
+    rules = StandardBlackjackRules()
+    dealer_strategy = StandardDealerStrategy()
+    game = Game(1, shoe, rules, dealer_strategy)
+
+    class InvalidStrategy(Strategy):
+        def choose_action(self, hand, available_actions, game_state):
+            class FakeAction:
+                name = "INVALID"
+
+            return FakeAction()
+
+    with pytest.raises(RuntimeError):
+        game.play_turn(game.dealer, InvalidStrategy(), "Dealer")

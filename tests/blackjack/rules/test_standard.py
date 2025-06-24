@@ -87,3 +87,39 @@ def test_available_actions_and_can_continue():
     actions = rules.available_actions(hand, {})
     assert actions == []
     assert not rules.can_continue(hand, {})
+
+
+def test_handvalue_str_and_repr():
+    from blackjack.rules.base import HandValue
+
+    hv = HandValue(17, True)
+    assert str(hv) == "17, soft"
+    assert "HandValue(value=17, soft=True)" in repr(hv)
+
+
+def test_rules_base_not_implemented():
+    from blackjack.rules.base import Rules
+
+    class DummyRules(Rules):
+        pass
+
+    rules = DummyRules()
+    from blackjack.entities.hand import Hand
+
+    hand = Hand()
+    import pytest
+
+    with pytest.raises(NotImplementedError):
+        rules.hand_value(hand)
+    with pytest.raises(NotImplementedError):
+        rules.is_blackjack(hand)
+    with pytest.raises(NotImplementedError):
+        rules.is_bust(hand)
+    with pytest.raises(NotImplementedError):
+        rules.dealer_should_hit(hand)
+    with pytest.raises(NotImplementedError):
+        rules.blackjack_payout()
+    with pytest.raises(NotImplementedError):
+        rules.available_actions(hand, {})
+    with pytest.raises(NotImplementedError):
+        rules.can_continue(hand, {})

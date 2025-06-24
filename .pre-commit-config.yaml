@@ -45,10 +45,11 @@ repos:
       - id: pytest
         name: pytest
         entry: pytest
-        language: system
+        language: python
         pass_filenames: false
         always_run: true
         verbose: true
+        additional_dependencies: [pytest, pytest-cov]
   - repo: https://github.com/PyCQA/isort
     rev: 5.13.2
     hooks:
