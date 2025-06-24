@@ -8,9 +8,9 @@ class StandardBlackjackRules(Rules):
         value = 0
         aces = 0
         for card in hand.cards:
-            if card.rank in {'J', 'Q', 'K'}:
+            if card.rank in {"J", "Q", "K"}:
                 value += 10
-            elif card.rank == 'A':
+            elif card.rank == "A":
                 aces += 1
                 value += 11
             else:
@@ -30,7 +30,7 @@ class StandardBlackjackRules(Rules):
 
     def dealer_should_hit(self, hand: Hand) -> bool:
         hv = self.hand_value(hand)
-        return hv.value < 17 or (hv.value == 17 and hv.soft)
+        return hv.value < 17
 
     def blackjack_payout(self) -> float:
         return 1.5
