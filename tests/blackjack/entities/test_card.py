@@ -6,7 +6,7 @@ def test_card_valid():
     card = Card("A", "♠")
     assert card.rank == "A"
     assert card.suit == "♠"
-    assert str(card) == "A of ♠"
+    assert str(card) == "A♠"
     assert repr(card) == "Card(rank='A', suit='♠')"
 
 
