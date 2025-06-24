@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Tuple
 
-from app.src.blackjack.entities.card import Card
+from blackjack.entities.card import Card
 
 
 class DeckSchema(ABC):

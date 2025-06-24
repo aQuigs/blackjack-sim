@@ -1,4 +1,4 @@
-from app.src.blackjack.entities.hand import Hand
+from blackjack.entities.hand import Hand
 
 
 class Player:

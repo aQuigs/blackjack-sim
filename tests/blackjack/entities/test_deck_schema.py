@@ -1,5 +1,5 @@
-from app.src.blackjack.entities.card import Card
-from app.src.blackjack.entities.deck_schema import StandardBlackjackSchema
+from blackjack.entities.card import Card
+from blackjack.entities.deck_schema import StandardBlackjackSchema
 
 
 def test_standard_blackjack_schema_counts():

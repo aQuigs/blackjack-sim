@@ -1,9 +1,9 @@
-from app.src.blackjack.action import Action
-from app.src.blackjack.entities.deck_schema import StandardBlackjackSchema
-from app.src.blackjack.entities.shoe import Shoe
-from app.src.blackjack.game import Game
-from app.src.blackjack.rules.standard import StandardBlackjackRules
-from app.src.blackjack.strategy.random import RandomStrategy
+from blackjack.action import Action
+from blackjack.entities.deck_schema import StandardBlackjackSchema
+from blackjack.entities.shoe import Shoe
+from blackjack.game import Game
+from blackjack.rules.standard import StandardBlackjackRules
+from blackjack.strategy.random import RandomStrategy
 
 
 def main(printable: bool = True):

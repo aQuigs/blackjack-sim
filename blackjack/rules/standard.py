@@ -1,6 +1,6 @@
-from app.src.blackjack.action import Action
-from app.src.blackjack.entities.hand import Hand
-from app.src.blackjack.rules.base import HandValue, Rules
+from blackjack.action import Action
+from blackjack.entities.hand import Hand
+from blackjack.rules.base import HandValue, Rules
 
 
 class StandardBlackjackRules(Rules):

@@ -1,8 +1,8 @@
 import pytest
 
-from app.src.blackjack.action import Action
-from app.src.blackjack.entities.hand import Hand
-from app.src.blackjack.strategy.random import RandomStrategy
+from blackjack.action import Action
+from blackjack.entities.hand import Hand
+from blackjack.strategy.random import RandomStrategy
 
 
 def test_random_strategy_chooses_action():

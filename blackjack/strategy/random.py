@@ -1,8 +1,8 @@
 import random
 
-from app.src.blackjack.action import Action
-from app.src.blackjack.entities.hand import Hand
-from app.src.blackjack.strategy.base import PlayerStrategy
+from blackjack.action import Action
+from blackjack.entities.hand import Hand
+from blackjack.strategy.base import PlayerStrategy
 
 
 class RandomStrategy(PlayerStrategy):

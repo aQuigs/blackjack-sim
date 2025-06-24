@@ -1,7 +1,7 @@
-from app.src.blackjack.action import Action
-from app.src.blackjack.entities.card import Card
-from app.src.blackjack.entities.hand import Hand
-from app.src.blackjack.rules.standard import StandardBlackjackRules
+from blackjack.action import Action
+from blackjack.entities.card import Card
+from blackjack.entities.hand import Hand
+from blackjack.rules.standard import StandardBlackjackRules
 
 
 def make_hand(cards):

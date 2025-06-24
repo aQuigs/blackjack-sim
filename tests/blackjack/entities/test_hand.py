@@ -1,5 +1,5 @@
-from app.src.blackjack.entities.card import Card
-from app.src.blackjack.entities.hand import Hand
+from blackjack.entities.card import Card
+from blackjack.entities.hand import Hand
 
 
 def test_hand_initial():
