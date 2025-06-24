@@ -28,10 +28,6 @@ class StandardBlackjackRules(Rules):
     def is_bust(self, hand: Hand) -> bool:
         return self.hand_value(hand).value > 21
 
-    def dealer_should_hit(self, hand: Hand) -> bool:
-        hv = self.hand_value(hand)
-        return hv.value < 17
-
     def blackjack_payout(self) -> float:
         return 1.5
 

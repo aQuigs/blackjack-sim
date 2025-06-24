@@ -2,6 +2,7 @@ from blackjack.action import Action
 from blackjack.entities.card import Card
 from blackjack.entities.hand import Hand
 from blackjack.rules.standard import StandardBlackjackRules
+from blackjack.strategy.random import StandardDealerStrategy
 
 
 def make_hand(cards):
@@ -52,15 +53,22 @@ def test_is_bust():
 
 def test_dealer_should_hit():
     rules = StandardBlackjackRules()
+    dealer_strategy = StandardDealerStrategy()
     # Dealer hits on 16
     hand = make_hand([("10", "♠"), ("6", "♣")])
-    assert rules.dealer_should_hit(hand)
+    actions = rules.available_actions(hand, {})
+    action = dealer_strategy.choose_action(hand, actions, {})
+    assert action == Action.HIT
     # Dealer stands on hard 17
     hand = make_hand([("10", "♠"), ("7", "♣")])
-    assert not rules.dealer_should_hit(hand)
+    actions = rules.available_actions(hand, {})
+    action = dealer_strategy.choose_action(hand, actions, {})
+    assert action == Action.STAND
     # Dealer stands on soft 17
     hand = make_hand([("A", "♠"), ("6", "♣")])
-    assert not rules.dealer_should_hit(hand)
+    actions = rules.available_actions(hand, {})
+    action = dealer_strategy.choose_action(hand, actions, {})
+    assert action == Action.STAND
 
 
 def test_blackjack_payout():

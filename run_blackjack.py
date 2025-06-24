@@ -4,7 +4,7 @@ from blackjack.entities.deck_schema import StandardBlackjackSchema
 from blackjack.entities.shoe import Shoe
 from blackjack.game import Game
 from blackjack.rules.standard import StandardBlackjackRules
-from blackjack.strategy.random import RandomStrategy
+from blackjack.strategy.random import RandomStrategy, StandardDealerStrategy
 
 
 def main(printable: bool = True):
@@ -15,7 +15,8 @@ def main(printable: bool = True):
     shoe = Shoe(deck_schema, num_decks)
     rules = StandardBlackjackRules()
     strategy = RandomStrategy()
-    game = Game(num_players, shoe, rules)
+    dealer_strategy = StandardDealerStrategy()
+    game = Game(num_players, shoe, rules, dealer_strategy)
 
     # Play a round using the new interface
     game.play_round([strategy for _ in range(num_players)])

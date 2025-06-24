@@ -6,15 +6,16 @@ from blackjack.entities.player import Player
 from blackjack.entities.shoe import Shoe
 from blackjack.game import Game
 from blackjack.rules.standard import StandardBlackjackRules
-from blackjack.strategy.base import PlayerStrategy
+from blackjack.strategy.base import Strategy
+from blackjack.strategy.random import StandardDealerStrategy
 
 
-class AlwaysStandStrategy(PlayerStrategy):
+class AlwaysStandStrategy(Strategy):
     def choose_action(self, hand, available_actions, game_state):
         return Action.STAND if Action.STAND in available_actions else available_actions[0]
 
 
-class AlwaysHitStrategy(PlayerStrategy):
+class AlwaysHitStrategy(Strategy):
     def choose_action(self, hand, available_actions, game_state):
         return Action.HIT if Action.HIT in available_actions else available_actions[0]
 
@@ -31,7 +32,8 @@ def test_game_all_players_bust():
     deck_schema = StandardBlackjackSchema()
     shoe = Shoe(deck_schema, num_decks=1)
     rules = StandardBlackjackRules()
-    game = Game(2, shoe, rules)
+    dealer_strategy = StandardDealerStrategy()
+    game = Game(2, shoe, rules, dealer_strategy)
     strategies = [AlwaysHitStrategy(), AlwaysHitStrategy()]
     game.play_round(strategies)
     assert all(rules.is_bust(player.hand) for player in game.players)
@@ -59,7 +61,8 @@ def test_game_all_players_blackjack():
 
     shoe.deal_card = deal_card_patch
     rules = StandardBlackjackRules()
-    game = Game(2, shoe, rules)
+    dealer_strategy = StandardDealerStrategy()
+    game = Game(2, shoe, rules, dealer_strategy)
     strategies = [AlwaysStandStrategy(), AlwaysStandStrategy()]
     game.play_round(strategies)
     assert all(rules.is_blackjack(player.hand) for player in game.players)
@@ -72,7 +75,8 @@ def test_game_dealer_plays_if_needed():
     deck_schema = StandardBlackjackSchema()
     shoe = Shoe(deck_schema, num_decks=1)
     rules = StandardBlackjackRules()
-    game = Game(1, shoe, rules)
+    dealer_strategy = StandardDealerStrategy()
+    game = Game(1, shoe, rules, dealer_strategy)
     strategies = [AlwaysStandStrategy()]
     game.play_round(strategies)
     # Dealer should have more than 2 cards if they hit
@@ -98,9 +102,10 @@ def test_player_wins_when_dealer_busts(caplog):
 
     shoe.deal_card = deal_card_patch
     rules = StandardBlackjackRules()
-    game = Game(1, shoe, rules)
+    dealer_strategy = StandardDealerStrategy()
+    game = Game(1, shoe, rules, dealer_strategy)
 
-    class StandStrategy(PlayerStrategy):
+    class StandStrategy(Strategy):
         def choose_action(self, hand, available_actions, game_state):
             return Action.STAND
 
