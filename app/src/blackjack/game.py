@@ -1,6 +1,6 @@
-from app.src.deck.player import Player
-from app.src.deck.shoe import Shoe
-from app.src.deck.rules import Rules
+from app.src.blackjack.entities.player import Player
+from app.src.blackjack.entities.shoe import Shoe
+from app.src.blackjack.rules.base import Rules
 from enum import Enum, auto
 import logging
 
@@ -8,7 +8,6 @@ import logging
 class Action(Enum):
     HIT = auto()
     STAND = auto()
-    # Add more actions as needed (DOUBLE, SPLIT, etc.)
 
 
 class Game:
@@ -35,11 +34,9 @@ class Game:
             if self.rules.is_bust(player.hand):
                 break
             actions = self.rules.available_actions(player.hand, {})
-            # Defensive: ensure all actions are valid Action enums
             for action in actions:
                 if not isinstance(action, Action):
                     raise ValueError(f"Invalid action type: {action}")
-
             if Action.HIT in actions:
                 try:
                     player.hand.add_card(self.shoe.deal_card())
@@ -49,7 +46,6 @@ class Game:
             elif Action.STAND in actions:
                 break
             else:
-                # Defensive: No valid action found
                 logging.critical(
                     f"No valid action available for player {player.name} with hand {player.hand.cards}. "
                     f"Available actions: {actions}"
@@ -72,6 +68,3 @@ class Game:
         for player in self.players:
             self.play_player_turn(player)
         self.play_dealer_turn()
-        # Future: determine outcomes, payouts, etc.
-
-    # Future: implement game flow, dealing, actions, outcomes, etc.

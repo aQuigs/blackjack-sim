@@ -1,4 +1,4 @@
-from app.src.deck.card import Card
+from app.src.blackjack.entities.card import Card
 
 
 class Hand:
@@ -7,5 +7,3 @@ class Hand:
 
     def add_card(self, card: Card) -> None:
         self.cards.append(card)
-
-    # Future: implement hand value, blackjack, bust, etc.
