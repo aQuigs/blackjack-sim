@@ -11,9 +11,7 @@ from blackjack.strategy.base import PlayerStrategy
 
 class AlwaysStandStrategy(PlayerStrategy):
     def choose_action(self, hand, available_actions, game_state):
-        return (
-            Action.STAND if Action.STAND in available_actions else available_actions[0]
-        )
+        return Action.STAND if Action.STAND in available_actions else available_actions[0]
 
 
 class AlwaysHitStrategy(PlayerStrategy):
@@ -79,3 +77,39 @@ def test_game_dealer_plays_if_needed():
     game.play_round(strategies)
     # Dealer should have more than 2 cards if they hit
     assert len(game.dealer.hand.cards) >= 2
+
+
+def test_player_wins_when_dealer_busts(caplog):
+    deck_schema = StandardBlackjackSchema()
+    shoe = Shoe(deck_schema, num_decks=1)
+    # Stack the shoe so player stands on 7, dealer busts with 22
+    # Deal order: P, D, P, D, then dealer hits
+    shoe.cards = [
+        ("10", "♠"),  # Dealer hit (busts)
+        ("J", "♠"),  # Dealer second card
+        ("4", "♥"),  # Player second card
+        ("2", "♦"),  # Dealer first card
+        ("3", "♦"),  # Player first card
+    ]
+
+    def deal_card_patch():
+        rank, suit = shoe.cards.pop()
+        return Card(rank, suit)
+
+    shoe.deal_card = deal_card_patch
+    rules = StandardBlackjackRules()
+    game = Game(1, shoe, rules)
+
+    class StandStrategy(PlayerStrategy):
+        def choose_action(self, hand, available_actions, game_state):
+            return Action.STAND
+
+    strategy = StandStrategy()
+    with caplog.at_level("INFO"):
+        game.play_round([strategy])
+    # Player should not bust
+    assert not rules.is_bust(game.players[0].hand)
+    # Dealer should bust
+    assert rules.is_bust(game.dealer.hand)
+    # Check log for correct bust message
+    assert any("Dealer busts with hand" in r for r in caplog.messages)

@@ -72,7 +72,10 @@ class Game:
                 logging.error(f"Error dealing to dealer: {e}")
                 break
         hv = self.rules.hand_value(self.dealer.hand)
-        logging.info(f"Dealer stands with hand: {self.dealer.hand} ({hv})")
+        if self.rules.is_bust(self.dealer.hand):
+            logging.info(f"Dealer busts with hand: {self.dealer.hand} ({hv})")
+        else:
+            logging.info(f"Dealer stands with hand: {self.dealer.hand} ({hv})")
 
     def play_round(self, strategies: List[PlayerStrategy]):
         if len(strategies) != len(self.players):
