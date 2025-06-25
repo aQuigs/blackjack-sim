@@ -36,6 +36,10 @@ class Game:
             if self.rules.is_bust(player.hand):
                 logging.info(f"{name} busts with hand: {player.hand} ({hv})")
                 break
+            # Prevent hitting at 21
+            if hv.value == 21:
+                logging.info(f"{name} stands with hand: {player.hand} ({hv}) - cannot hit at 21")
+                break
             actions = self.rules.available_actions(player.hand, {})
             if not actions:
                 logging.info(f"{name} has no available actions with hand: {player.hand} ({hv})")
