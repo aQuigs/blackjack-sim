@@ -66,7 +66,9 @@
 - Test names and file structure should reflect externally-visible behavior and group by unit-under-test.
 
 - **Testing Philosophy: Testing Without Mocks (James Shore)**
-  - No mocks or stubs for internal code. Only use them for truly external dependencies (network, filesystem, database, third-party APIs).
+  - No mocks, stubs, or test doubles for internal code. Only use them for truly external dependencies (network, filesystem, database, third-party APIs).
+  - All nullables or configurable dependencies used for testing must be production code, documented, and available for use in production scenarios—not test-only helpers or subclasses.
+  - When you need to control or observe internal dependencies in tests, use a nullable or configurable implementation that is part of the real system, not a test double.
   - Write "narrow" tests that focus on a specific concept or behavior, not broad end-to-end tests.
   - Use state-based assertions: check the output or state, not the interactions or method calls.
   - Tests must follow a clear "arrange, act, assert" structure and describe externally-visible behavior, not implementation details. Tests should serve as documentation for the unit under test.

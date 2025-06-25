@@ -1,7 +1,7 @@
 import logging
-from typing import Sequence, List, Any, Optional, Callable
-from enum import Enum, auto
 from dataclasses import dataclass
+from enum import Enum, auto
+from typing import Any, Callable, List, Optional, Sequence
 
 from blackjack.action import Action
 from blackjack.entities.player import Player
@@ -144,17 +144,29 @@ class Game:
             hand_value = self.rules.hand_value(player.hand)
 
             if self.rules.is_bust(player.hand):
-                self._track(GameEvent(GameEventType.BUST, BustEvent(player=player.name, hand=repr(player.hand), value=hand_value.value)))
+                self._track(
+                    GameEvent(
+                        GameEventType.BUST,
+                        BustEvent(player=player.name, hand=repr(player.hand), value=hand_value.value),
+                    )
+                )
                 logging.info(f"{player.name} busts with hand: {player.hand} ({hand_value})")
                 return False
 
             if self.rules.is_blackjack(player.hand):
-                self._track(GameEvent(GameEventType.BLACKJACK, BlackjackEvent(player=player.name, hand=repr(player.hand), value=hand_value.value)))
+                self._track(
+                    GameEvent(
+                        GameEventType.BLACKJACK,
+                        BlackjackEvent(player=player.name, hand=repr(player.hand), value=hand_value.value),
+                    )
+                )
                 logging.info(f"{player.name} has blackjack with hand: {player.hand} ({hand_value})")
                 return False
 
             if hand_value.value == 21:
-                self._track(GameEvent(GameEventType.TWENTY_ONE, TwentyOneEvent(player=player.name, hand=repr(player.hand))))
+                self._track(
+                    GameEvent(GameEventType.TWENTY_ONE, TwentyOneEvent(player=player.name, hand=repr(player.hand)))
+                )
                 return True
 
             if self.do_player_action(player, strategy):
@@ -168,7 +180,12 @@ class Game:
             raise RuntimeError(f"{player.name} has no available actions with hand: {player.hand} ({hand_value})")
 
         action = strategy.choose_action(player.hand, actions, {})
-        self._track(GameEvent(GameEventType.CHOOSE_ACTION, ChooseActionEvent(player=player.name, action=action, hand=repr(player.hand))))
+        self._track(
+            GameEvent(
+                GameEventType.CHOOSE_ACTION,
+                ChooseActionEvent(player=player.name, action=action, hand=repr(player.hand)),
+            )
+        )
         logging.info(f"{player.name} chooses {action.name} with hand: {player.hand} ({hand_value})")
 
         if action == Action.STAND:
@@ -177,7 +194,12 @@ class Game:
             card = self.shoe.deal_card()
             player.hand.add_card(card)
             hv_new = self.rules.hand_value(player.hand)
-            self._track(GameEvent(GameEventType.HIT, HitEvent(player=player.name, card=repr(card), new_hand=repr(player.hand), value=hv_new.value)))
+            self._track(
+                GameEvent(
+                    GameEventType.HIT,
+                    HitEvent(player=player.name, card=repr(card), new_hand=repr(player.hand), value=hv_new.value),
+                )
+            )
             logging.info(f"{player.name} receives: {card}. New hand: {player.hand} ({hv_new})")
             return False
         else:
@@ -186,7 +208,7 @@ class Game:
                     GameEventType.INVALID_ACTION,
                     InvalidActionEvent(
                         player=player.name,
-                        action=getattr(action, 'name', str(action)),
+                        action=getattr(action, "name", str(action)),
                         hand=repr(player.hand),
                     ),
                 )

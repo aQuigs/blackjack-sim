@@ -4,41 +4,46 @@ import click
 
 from blackjack.entities.deck_schema import StandardBlackjackSchema
 from blackjack.entities.shoe import Shoe
-from blackjack.game import Game
+from blackjack.game import Game, GameResult
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.random import RandomStrategy, StandardDealerStrategy
 
 
-def run_game(num_players: int, num_decks: int, printable: bool = True):
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
-    deck_schema = StandardBlackjackSchema()
-    shoe = Shoe(deck_schema, num_decks)
-    rules = StandardBlackjackRules()
-    strategy = RandomStrategy()
-    dealer_strategy = StandardDealerStrategy()
-    player_strategies = [strategy for _ in range(num_players)]
-    game = Game(player_strategies, shoe, rules, dealer_strategy)
-    game.play_round()
-    if printable:
-        for i, player in enumerate(game.players):
-            hand_str = " ".join(str(card) for card in player.hand.cards)
-            print(f"Player {i+1} final hand: {hand_str}")
-        dealer_hand_str = " ".join(str(card) for card in game.dealer.hand.cards)
-        print(f"Dealer final hand: {dealer_hand_str}")
-    player_value = rules.hand_value(game.players[0].hand).value
-    dealer_value = rules.hand_value(game.dealer.hand).value
-    if rules.is_bust(game.players[0].hand):
-        result = "Player busts, dealer wins."
-    elif rules.is_bust(game.dealer.hand):
-        result = "Dealer busts, player wins!"
-    elif player_value > dealer_value:
-        result = "Player wins!"
-    elif player_value < dealer_value:
-        result = "Dealer wins."
-    else:
-        result = "Push (tie)."
-    if printable:
-        print(f"Result: {result}")
+class BlackjackCLI:
+    def __init__(
+        self,
+        output_tracker=None,
+        deck_schema=None,
+        rules=None,
+        player_strategy=None,
+        dealer_strategy=None,
+    ):
+        self.output_tracker = output_tracker
+        self.deck_schema = deck_schema or StandardBlackjackSchema()
+        self.rules = rules or StandardBlackjackRules()
+        self.player_strategy = player_strategy or RandomStrategy()
+        self.dealer_strategy = dealer_strategy or StandardDealerStrategy()
+
+    def run(self, num_players: int, num_decks: int, printable: bool = True) -> GameResult:
+        logging.basicConfig(level=logging.INFO, format="%(message)s")
+        shoe = Shoe(self.deck_schema, num_decks)
+        player_strategies = [self.player_strategy for _ in range(num_players)]
+        game = Game(
+            player_strategies,
+            shoe,
+            self.rules,
+            self.dealer_strategy,
+            output_tracker=self.output_tracker,
+        )
+        result = game.play_round()
+        if printable:
+            for i, player_result in enumerate(result.player_results):
+                hand_str = " ".join(card for card in player_result.hand)
+                print(f"Player {i+1} final hand: {hand_str}")
+            dealer_hand_str = " ".join(card for card in result.dealer_hand)
+            print(f"Dealer final hand: {dealer_hand_str}")
+            print(f"Result: {result.winner.name if result.winner else 'Unknown'}")
+        return result
 
 
 @click.command()
@@ -48,7 +53,8 @@ def run_game(num_players: int, num_decks: int, printable: bool = True):
 def main(num_players, num_decks, no_print):
     """Run a blackjack simulation from the command line."""
     try:
-        run_game(num_players, num_decks, printable=not no_print)
+        cli = BlackjackCLI()
+        cli.run(num_players, num_decks, printable=not no_print)
     except Exception as exc:
         logging.error(f"Error running blackjack simulation: {exc}")
         raise SystemExit(1)

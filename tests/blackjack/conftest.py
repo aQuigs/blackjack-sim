@@ -1,7 +1,7 @@
 import pytest
 
 from blackjack.entities.card import Card
-from blackjack.entities.deck_schema import StandardBlackjackSchema
+from blackjack.entities.deck_schema import StandardBlackjackSchema, ConfigurableDeckSchema
 from blackjack.entities.shoe import Shoe
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.base import Strategy
@@ -31,6 +31,13 @@ def always_hit_strategy():
 @pytest.fixture
 def standard_dealer_strategy():
     return StandardDealerStrategy()
+
+
+@pytest.fixture
+def stacked_deck_schema():
+    def _stacked_deck_schema(cards):
+        return ConfigurableDeckSchema(cards)
+    return _stacked_deck_schema
 
 
 @pytest.fixture
