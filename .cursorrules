@@ -60,3 +60,5 @@ Additionally:
 25. **Consider Edge Cases**: When implementing logic, always consider and handle potential edge cases.
 
 26. **Use Assertions**: Include assertions wherever possible to validate assumptions and catch potential errors early.
+
+27. When pre-commit fails due to missing test coverage, automatically add or update tests to cover the missing lines/files, especially for new or changed code, without asking for confirmation.
