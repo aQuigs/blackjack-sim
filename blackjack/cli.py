@@ -64,10 +64,10 @@ class BlackjackCLI:
         result = game.play_round()
         if printable:
             for i, player_result in enumerate(result.player_results):
-                hand_str = " ".join(card for card in player_result.hand)
+                hand_str = " ".join(str(card) for card in player_result.hand)
                 print(f"Player {i+1} final hand: {hand_str}")
 
-            dealer_hand_str = " ".join(card for card in result.dealer_hand)
+            dealer_hand_str = " ".join(str(card) for card in result.dealer_hand)
 
             print(f"Dealer final hand: {dealer_hand_str}")
             print(f"Result: {result.winner.name if result.winner else 'Unknown'}")

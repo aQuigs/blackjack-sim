@@ -4,6 +4,7 @@ from enum import Enum, auto
 from typing import Any, Callable, List, Optional, Sequence
 
 from blackjack.action import Action
+from blackjack.entities.card import Card
 from blackjack.entities.player import Player
 from blackjack.entities.shoe import Shoe
 from blackjack.rules.base import Rules
@@ -91,14 +92,14 @@ class InvalidActionEvent:
 @dataclass(frozen=True)
 class PlayerResult:
     name: str
-    hand: List[str]
+    hand: list[Card]
     outcome: PlayerOutcome
 
 
 @dataclass(frozen=True)
 class GameResult:
-    player_results: List[PlayerResult]
-    dealer_hand: List[str]
+    player_results: list[PlayerResult]
+    dealer_hand: list[Card]
     winner: Optional[Winner]
 
 
@@ -233,7 +234,7 @@ class Game:
         # Compute structured result
         player_results = []
         for player in self.players:
-            hand = [repr(card) for card in player.hand.cards]
+            hand = list(player.hand.cards)
             if self.rules.is_bust(player.hand):
                 outcome = PlayerOutcome.BUST
             elif self.rules.is_blackjack(player.hand):
@@ -242,7 +243,7 @@ class Game:
                 outcome = PlayerOutcome.ACTIVE
             player_results.append(PlayerResult(name=player.name, hand=hand, outcome=outcome))
 
-        dealer_hand = [repr(card) for card in self.dealer.hand.cards]
+        dealer_hand = list(self.dealer.hand.cards)
         dealer_bust = self.rules.is_bust(self.dealer.hand)
         dealer_value = self.rules.hand_value(self.dealer.hand).value
         winner = Winner.NONE
