@@ -29,6 +29,7 @@
 - Do not remove empty newlines within a function. These exist for clarity and should be preserved.
 - Don't suggest whitespace changes.
 - Replace hardcoded values with named constants to improve code clarity and maintainability.
+- Don't use uppercase std types when defining types. E.g. instead of List use list
 
 ## Code Quality & Safety
 - Always verify information before presenting it. Do not make assumptions or speculate without clear evidence.
@@ -109,14 +110,22 @@
 
   - All contributors and automation must follow these rules for all unit tests. If a test or code change cannot follow these patterns, document the reason and discuss before proceeding.
 
+  ### Observability & Output Tracking
+  - All logic code (e.g., Game, Simulation) must support output tracking via an event log and structured results.
+  - The event log should record all externally-visible events, actions, and outcomes in a testable, structured way.
+  - Structured results (e.g., winner, hands, actions) must be available for each top-level request (e.g., a game or simulation run).
+  - Tests must assert only on externally-visible behavior using these outputs, never on internal state or implementation details.
+  - Tests must interact with the system only through public interfaces (e.g., run a game, observe results/event log).
+  - No test may manipulate or patch internal state or methods; all setup must use public configuration or dependency injection.
+  - All contributors and automation must follow these rules for all new and existing code and tests.
+
+  ### Infrastructure/Nullability Pattern ("Fake-It-Once-You-Make-It")
+  - Always use a single, production constructor for the main case (e.g., live randomness).
+  - Provide a clear, production-meaningful factory/classmethod for nullability or configurability (e.g., create_null).
+  - Avoid hacks like __new__ or direct attribute assignment; always use the constructor and public API.
+  - The null/configurable path must be a real, documented, production feature—not a test hook or test-only code.
+  - This pattern is required for all infrastructure wrappers (e.g., randomness, time, etc.) to support mockless, state-based testing.
+  - See the latest Shoe implementation for the preferred approach.
+
 ## Context Awareness
 - Remember to check the context generated file for the current file contents and implementations.
-
-## Observability & Output Tracking
-- All logic code (e.g., Game, Simulation) must support output tracking via an event log and structured results.
-- The event log should record all externally-visible events, actions, and outcomes in a testable, structured way.
-- Structured results (e.g., winner, hands, actions) must be available for each top-level request (e.g., a game or simulation run).
-- Tests must assert only on externally-visible behavior using these outputs, never on internal state or implementation details.
-- Tests must interact with the system only through public interfaces (e.g., run a game, observe results/event log).
-- No test may manipulate or patch internal state or methods; all setup must use public configuration or dependency injection.
-- All contributors and automation must follow these rules for all new and existing code and tests.

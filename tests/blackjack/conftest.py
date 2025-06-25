@@ -1,7 +1,7 @@
 import pytest
 
 from blackjack.entities.card import Card
-from blackjack.entities.deck_schema import StandardBlackjackSchema, ConfigurableDeckSchema
+from blackjack.entities.deck_schema import StandardBlackjackSchema
 from blackjack.entities.shoe import Shoe
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.base import Strategy
@@ -34,19 +34,13 @@ def standard_dealer_strategy():
 
 
 @pytest.fixture
-def stacked_deck_schema():
-    def _stacked_deck_schema(cards):
-        return ConfigurableDeckSchema(cards)
-    return _stacked_deck_schema
-
-
-@pytest.fixture
 def stacked_shoe():
     def _stacked_shoe(cards, num_decks=1):
         deck_schema = StandardBlackjackSchema()
         shoe = Shoe(deck_schema, num_decks=num_decks)
         shoe.cards = [Card(rank, suit) for rank, suit in cards]
         return shoe
+
     return _stacked_shoe
 
 
@@ -55,7 +49,9 @@ def custom_rules():
     def _custom_rules(**overrides):
         class CustomRules(StandardBlackjackRules):
             pass
+
         for name, func in overrides.items():
             setattr(CustomRules, name, staticmethod(func))
         return CustomRules()
+
     return _custom_rules
