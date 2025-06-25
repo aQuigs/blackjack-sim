@@ -211,7 +211,7 @@ def test_game_play_turn_invalid_action():
 
     player = game.players[0]
     with pytest.raises(RuntimeError):
-        game.play_turn(player, InvalidStrategy(), player.name)
+        game.play_turn(player, InvalidStrategy())
 
 
 def test_game_no_available_actions():
@@ -229,8 +229,9 @@ def test_game_no_available_actions():
     # Patch rules to return no actions
     rules.available_actions = lambda hand, gs: []
     player = game.players[0]
-    # Should not raise, just log and break
-    game.play_turn(player, NoActionStrategy(), player.name)
+    # Should raise RuntimeError
+    with pytest.raises(RuntimeError):
+        game.play_turn(player, NoActionStrategy())
 
 
 def test_game_all_players_bust_or_blackjack():
@@ -255,9 +256,8 @@ def test_game_dealer_no_available_actions(caplog):
     game = Game(player_strategies, shoe, rules, dealer_strategy)
     # Patch rules to return no actions for dealer
     rules.available_actions = lambda hand, gs: []
-    with caplog.at_level("INFO"):
-        game.play_turn(game.dealer, dealer_strategy, "Dealer")
-    assert any("Dealer has no available actions" in r for r in caplog.messages)
+    with pytest.raises(RuntimeError):
+        game.play_turn(game.dealer, dealer_strategy)
 
 
 def test_game_dealer_invalid_action_error():
@@ -276,4 +276,4 @@ def test_game_dealer_invalid_action_error():
             return FakeAction()
 
     with pytest.raises(RuntimeError):
-        game.play_turn(game.dealer, InvalidStrategy(), "Dealer")
+        game.play_turn(game.dealer, InvalidStrategy())

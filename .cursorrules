@@ -62,3 +62,7 @@ Additionally:
 26. **Use Assertions**: Include assertions wherever possible to validate assumptions and catch potential errors early.
 
 27. When pre-commit fails due to missing test coverage, automatically add or update tests to cover the missing lines/files, especially for new or changed code, without asking for confirmation.
+
+28. Use empty lines to separate logical sections of code for improved readability, especially in function and class bodies.
+
+29. Do not remove empty newlines within a function. These exist for clarity and should be preserved.

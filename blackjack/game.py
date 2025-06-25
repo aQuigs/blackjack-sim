@@ -21,67 +21,61 @@ class Game:
     def initial_deal(self) -> None:
         for _ in range(2):
             for player in self.players:
-                try:
-                    player.hand.add_card(self.shoe.deal_card())
-                except ValueError as e:
-                    logging.error(f"Error dealing to player {player.name}: {e}")
-            try:
-                self.dealer.hand.add_card(self.shoe.deal_card())
-            except ValueError as e:
-                logging.error(f"Error dealing to dealer: {e}")
+                player.hand.add_card(self.shoe.deal_card())
 
-    def play_turn(self, player: Player, strategy: Strategy, name: str = "") -> None:
-        if not name:
-            name = player.name
+            self.dealer.hand.add_card(self.shoe.deal_card())
+
+    def play_turn(self, player: Player, strategy: Strategy) -> bool:
         while True:
-            hv = self.rules.hand_value(player.hand)
+            hand_value = self.rules.hand_value(player.hand)
+
             if self.rules.is_bust(player.hand):
-                logging.info(f"{name} busts with hand: {player.hand} ({hv})")
-                break
-            # Prevent hitting at 21
-            if hv.value == 21:
-                logging.info(f"{name} stands with hand: {player.hand} ({hv}) - cannot hit at 21")
-                break
-            actions = self.rules.available_actions(player.hand, {})
-            if not actions:
-                logging.info(f"{name} has no available actions with hand: {player.hand} ({hv})")
-                break
-            action = strategy.choose_action(player.hand, actions, {})
-            logging.info(f"{name} chooses {action.name} with hand: {player.hand} ({hv})")
-            if action == Action.HIT:
-                try:
-                    card = self.shoe.deal_card()
-                    player.hand.add_card(card)
-                    hv_new = self.rules.hand_value(player.hand)
-                    logging.info(f"{name} receives: {card}. New hand: {player.hand} ({hv_new})")
-                except ValueError as e:
-                    logging.error(f"Error dealing to {name}: {e}")
-                    break
-            elif action == Action.STAND:
-                logging.info(f"{name} stands with hand: {player.hand} ({hv})")
-                break
-            else:
-                logging.critical(
-                    f"No valid action available for {name} with hand {player.hand.cards}. Available actions: {actions}"
-                )
-                raise RuntimeError(
-                    f"No valid action available for {name} with hand {player.hand.cards}. Available actions: {actions}"
-                )
+                logging.info(f"{player.name} busts with hand: {player.hand} ({hand_value})")
+                return False
+
+            if self.rules.is_blackjack(player.hand):
+                logging.info(f"{player.name} has blackjack with hand: {player.hand} ({hand_value})")
+                return False
+
+            if hand_value.value == 21:
+                logging.info(f"{player.name} stands with hand: {player.hand} ({hand_value}) - cannot hit at 21")
+                return True
+
+            if self.do_player_action(player, strategy):
+                return True
+
+    def do_player_action(self, player: Player, strategy: Strategy) -> bool:
+        hand_value = self.rules.hand_value(player.hand)
+        actions = self.rules.available_actions(player.hand, {})
+        if not actions:
+            raise RuntimeError(f"{player.name} has no available actions with hand: {player.hand} ({hand_value})")
+
+        action = strategy.choose_action(player.hand, actions, {})
+        logging.info(f"{player.name} chooses {action.name} with hand: {player.hand} ({hand_value})")
+
+        if action == Action.STAND:
+            return True
+        elif action == Action.HIT:
+            card = self.shoe.deal_card()
+            player.hand.add_card(card)
+            hv_new = self.rules.hand_value(player.hand)
+
+            logging.info(f"{player.name} receives: {card}. New hand: {player.hand} ({hv_new})")
+
+            return False
+        else:
+            raise RuntimeError(
+                f"No valid action available for {player.name} with hand {player.hand.cards}. "
+                f"Available actions: {actions}"
+            )
 
     def play_round(self) -> None:
         self.initial_deal()
-        player_results: list[dict[str, bool]] = []
+        dealer_needed = False
+
         for player in self.players:
-            if player.strategy is None:
-                raise ValueError(f"Player {player.name} has no strategy assigned.")
-            self.play_turn(player, player.strategy, player.name)
-            player_results.append(
-                {
-                    "bust": self.rules.is_bust(player.hand),
-                    "blackjack": self.rules.is_blackjack(player.hand),
-                }
-            )
-        # If all players busted or have blackjack, skip dealer turn
-        if all(r["bust"] or r["blackjack"] for r in player_results):
-            return
-        self.play_turn(self.dealer, self.dealer_strategy, "Dealer")
+            if self.play_turn(player, player.strategy):
+                dealer_needed = True
+
+        if dealer_needed:
+            self.play_turn(self.dealer, self.dealer_strategy)
