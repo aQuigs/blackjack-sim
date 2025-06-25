@@ -1,8 +1,8 @@
 from blackjack.cli import BlackjackCLI
+from blackjack.entities.card import Card
+from blackjack.game import PlayerOutcome, Winner
 from blackjack.strategy.base import Strategy
 from blackjack.strategy.random import StandardDealerStrategy
-from blackjack.game import PlayerOutcome, Winner
-from blackjack.entities.card import Card
 
 
 class AlwaysHitStrategy(Strategy):
@@ -20,9 +20,14 @@ def test_game_all_players_bust():
     # Player 2: 10, 8, 6 = 24 (bust)
     # Dealer: 2, 2
     shoe_cards = [
-        Card("10", "♠"), Card("10", "♥"), Card("2", "♣"),
-        Card("9", "♦"),  Card("8", "♠"), Card("2", "♦"),
-        Card("5", "♣"),  Card("6", "♥"),
+        Card("10", "♠"),
+        Card("10", "♥"),
+        Card("2", "♣"),
+        Card("9", "♦"),
+        Card("8", "♠"),
+        Card("2", "♦"),
+        Card("5", "♣"),
+        Card("6", "♥"),
     ]
     cli = BlackjackCLI.create_null(
         num_decks=1,
@@ -40,8 +45,12 @@ def test_game_all_players_blackjack():
     # P2: A♥, K♥ (blackjack)
     # D: 9♣, 8♣
     shoe_cards = [
-        Card("A", "♠"), Card("A", "♥"), Card("9", "♣"),
-        Card("K", "♠"), Card("K", "♥"), Card("8", "♣"),
+        Card("A", "♠"),
+        Card("A", "♥"),
+        Card("9", "♣"),
+        Card("K", "♠"),
+        Card("K", "♥"),
+        Card("8", "♣"),
     ]
     cli = BlackjackCLI.create_null(
         num_decks=1,
@@ -58,8 +67,11 @@ def test_player_wins_when_dealer_busts():
     # P1: 10♠, Q♠ (20, stands)
     # D: 9♠, 5♣ (14), hits 8♣ (22, bust)
     shoe_cards = [
-        Card("10", "♠"), Card("9", "♠"), Card("Q", "♠"),
-        Card("5", "♣"), Card("8", "♣"),
+        Card("10", "♠"),
+        Card("9", "♠"),
+        Card("Q", "♠"),
+        Card("5", "♣"),
+        Card("8", "♣"),
     ]
     cli = BlackjackCLI.create_null(
         num_decks=1,
@@ -76,7 +88,9 @@ def test_game_push():
     # P1: 10♠, Q♠ (20)
     # D: 10♣, Q♣ (20)
     shoe_cards = [
-        Card("10", "♠"), Card("10", "♣"), Card("Q", "♠"),
+        Card("10", "♠"),
+        Card("10", "♣"),
+        Card("Q", "♠"),
         Card("Q", "♣"),
     ]
     cli = BlackjackCLI.create_null(

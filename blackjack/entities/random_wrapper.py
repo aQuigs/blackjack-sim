@@ -10,11 +10,12 @@ class RandomWrapper:
     In live mode, uses random.shuffle. In null mode, shuffle is a no-op or uses a configured response.
     This is production code, not a test double.
     """
-    class _LiveImpl():
+
+    class _LiveImpl:
         def shuffle(self, cards: list) -> None:
             random.shuffle(cards)
 
-    class _NullImpl():
+    class _NullImpl:
         def __init__(self, shuffle_response: Optional[list[Card]] = None) -> None:
             self._shuffle_response = shuffle_response
 
@@ -23,7 +24,7 @@ class RandomWrapper:
                 cards[:] = self._shuffle_response.copy()
 
     def __init__(self, null: bool = False, shuffle_response: Optional[list[Card]] = None) -> None:
-        self._impl: 'RandomWrapper._NullImpl | RandomWrapper._LiveImpl'
+        self._impl: "RandomWrapper._NullImpl | RandomWrapper._LiveImpl"
         if null:
             self._impl = self._NullImpl(shuffle_response)
         else:
