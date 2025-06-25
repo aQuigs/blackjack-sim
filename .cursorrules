@@ -109,3 +109,12 @@
 
 ## Context Awareness
 - Remember to check the context generated file for the current file contents and implementations.
+
+## Observability & Output Tracking
+- All logic code (e.g., Game, Simulation) must support output tracking via an event log and structured results.
+- The event log should record all externally-visible events, actions, and outcomes in a testable, structured way.
+- Structured results (e.g., winner, hands, actions) must be available for each top-level request (e.g., a game or simulation run).
+- Tests must assert only on externally-visible behavior using these outputs, never on internal state or implementation details.
+- Tests must interact with the system only through public interfaces (e.g., run a game, observe results/event log).
+- No test may manipulate or patch internal state or methods; all setup must use public configuration or dependency injection.
+- All contributors and automation must follow these rules for all new and existing code and tests.
