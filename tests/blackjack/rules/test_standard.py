@@ -2,7 +2,7 @@ from blackjack.action import Action
 from blackjack.cli import BlackjackCLI
 from blackjack.entities.card import Card
 from blackjack.entities.hand import Hand
-from blackjack.game import PlayerOutcome, Winner
+from blackjack.game_events import PlayerOutcome, Winner
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.base import Strategy
 from blackjack.strategy.random import StandardDealerStrategy

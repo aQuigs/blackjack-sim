@@ -5,7 +5,8 @@ import click
 
 from blackjack.entities.deck_schema import StandardBlackjackSchema
 from blackjack.entities.shoe import Shoe
-from blackjack.game import Game, GameResult
+from blackjack.game import Game
+from blackjack.game_events import GameResult
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.random import RandomStrategy, StandardDealerStrategy
 
