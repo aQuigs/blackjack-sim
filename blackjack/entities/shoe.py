@@ -5,7 +5,7 @@ from blackjack.entities.deck_schema import DeckSchema
 
 
 class Shoe:
-    def __init__(self, deck_schema: DeckSchema, num_decks: int = 1):
+    def __init__(self, deck_schema: DeckSchema, num_decks: int = 1) -> None:
         self.cards: list[Card] = []
         card_counts = deck_schema.card_counts()
         for _ in range(num_decks):
@@ -14,7 +14,7 @@ class Shoe:
                     self.cards.append(Card(rank, suit))
         self.shuffle()
 
-    def shuffle(self):
+    def shuffle(self) -> None:
         random.shuffle(self.cards)
 
     def deal_card(self) -> Card:

@@ -1,5 +1,6 @@
 black>=25.1.0
 flake8>=7.3.0
 flake8-bugbear>=24.2.6
+mypy
 pytest>=8.4.1
 pytest-cov

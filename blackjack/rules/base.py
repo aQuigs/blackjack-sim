@@ -3,14 +3,14 @@ from blackjack.entities.hand import Hand
 
 
 class HandValue:
-    def __init__(self, value: int, soft: bool):
-        self.value = value
-        self.soft = soft
+    def __init__(self, value: int, soft: bool) -> None:
+        self.value: int = value
+        self.soft: bool = soft
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"HandValue(value={self.value}, soft={self.soft})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.value}{', soft' if self.soft else ''}"
 
 
@@ -30,8 +30,8 @@ class Rules:
     def blackjack_payout(self) -> float:
         raise NotImplementedError
 
-    def available_actions(self, hand: Hand, game_state: dict) -> list[Action]:
+    def available_actions(self, hand: Hand, game_state: dict[str, object]) -> list[Action]:
         raise NotImplementedError
 
-    def can_continue(self, hand: Hand, game_state: dict) -> bool:
+    def can_continue(self, hand: Hand, game_state: dict[str, object]) -> bool:
         raise NotImplementedError

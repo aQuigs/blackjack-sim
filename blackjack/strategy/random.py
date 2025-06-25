@@ -6,14 +6,14 @@ from blackjack.strategy.base import Strategy
 
 
 class RandomStrategy(Strategy):
-    def choose_action(self, hand: Hand, available_actions: list[Action], game_state: dict) -> Action:
+    def choose_action(self, hand: Hand, available_actions: list[Action], game_state: dict[str, object]) -> Action:
         if not available_actions:
             raise ValueError("No available actions to choose from.")
         return random.choice(available_actions)
 
 
 class StandardDealerStrategy(Strategy):
-    def choose_action(self, hand, available_actions, game_state):
+    def choose_action(self, hand: Hand, available_actions: list[Action], game_state: dict[str, object]) -> Action:
         from blackjack.rules.standard import StandardBlackjackRules
 
         rules = StandardBlackjackRules()

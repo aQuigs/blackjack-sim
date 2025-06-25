@@ -9,14 +9,16 @@ from blackjack.strategy.base import Strategy
 
 
 class Game:
-    def __init__(self, player_strategies: Sequence[Strategy], shoe: Shoe, rules: Rules, dealer_strategy: Strategy):
-        self.shoe = shoe
-        self.rules = rules
-        self.players = [Player(f"Player {i+1}", strategy) for i, strategy in enumerate(player_strategies)]
-        self.dealer = Player("Dealer", dealer_strategy)
-        self.dealer_strategy = dealer_strategy
+    def __init__(
+        self, player_strategies: Sequence[Strategy], shoe: Shoe, rules: Rules, dealer_strategy: Strategy
+    ) -> None:
+        self.shoe: Shoe = shoe
+        self.rules: Rules = rules
+        self.players: list[Player] = [Player(f"Player {i+1}", strategy) for i, strategy in enumerate(player_strategies)]
+        self.dealer: Player = Player("Dealer", dealer_strategy)
+        self.dealer_strategy: Strategy = dealer_strategy
 
-    def initial_deal(self):
+    def initial_deal(self) -> None:
         for _ in range(2):
             for player in self.players:
                 try:
@@ -28,7 +30,7 @@ class Game:
             except ValueError as e:
                 logging.error(f"Error dealing to dealer: {e}")
 
-    def play_turn(self, player: Player, strategy, name: str = ""):
+    def play_turn(self, player: Player, strategy: Strategy, name: str = "") -> None:
         if not name:
             name = player.name
         while True:
@@ -66,9 +68,9 @@ class Game:
                     f"No valid action available for {name} with hand {player.hand.cards}. Available actions: {actions}"
                 )
 
-    def play_round(self):
+    def play_round(self) -> None:
         self.initial_deal()
-        player_results = []
+        player_results: list[dict[str, bool]] = []
         for player in self.players:
             if player.strategy is None:
                 raise ValueError(f"Player {player.name} has no strategy assigned.")
