@@ -20,7 +20,7 @@ class RandomWrapper:
 
         def shuffle(self, cards: list[Card]) -> None:
             if self._shuffle_response:
-                self._shuffle_response
+                cards[:] = self._shuffle_response.copy()
 
     def __init__(self, null: bool = False, shuffle_response: Optional[list[Card]] = None) -> None:
         self._impl: 'RandomWrapper._NullImpl | RandomWrapper._LiveImpl'
