@@ -38,7 +38,6 @@ class Game:
                 return False
 
             if hand_value.value == 21:
-                logging.info(f"{player.name} stands with hand: {player.hand} ({hand_value}) - cannot hit at 21")
                 return True
 
             if self.do_player_action(player, strategy):
