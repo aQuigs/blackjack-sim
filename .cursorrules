@@ -1,0 +1,8 @@
+# Cursor Rules for blackjack-sim
+
+- ALWAYS run `pre-commit run --all-files` after making any code changes.
+- Do not consider a change complete until all pre-commit hooks pass (including tests, lint, type checks, and coverage).
+- If pre-commit fails, fix the issues and rerun until it passes.
+- Communicate this requirement in all future code reviews and automation.
+- Also be willing to update .cursorrules to help remember context
+- Don't ever pip install anything directly. Use requirements.txt
