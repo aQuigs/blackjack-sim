@@ -72,6 +72,13 @@ class BlackjackCLI:
 
             print(f"Dealer final hand: {dealer_hand_str}")
             print(f"Result: {result.winner.name if result.winner else 'Unknown'}")
+            if result.state_transition_graph is not None:
+                print("\nState Transition Graph:")
+                for state, actions in result.state_transition_graph.get_graph().items():
+                    print(f"  {state}:")
+                    for action, next_states in actions.items():
+                        for next_state, count in next_states.items():
+                            print(f"    --{action.name}--> {next_state} [count={count}]")
         return result
 
 

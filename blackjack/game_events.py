@@ -4,6 +4,7 @@ from typing import Any, Optional
 
 from blackjack.action import Action
 from blackjack.entities.card import Card
+from blackjack.entities.state_transition_graph import StateTransitionGraph
 
 
 class GameEventType(Enum):
@@ -96,6 +97,7 @@ class GameResult:
     player_results: list[PlayerResult]
     dealer_hand: list[Card]
     winner: Optional[Winner]
+    state_transition_graph: StateTransitionGraph
 
 
 @dataclass(frozen=True)

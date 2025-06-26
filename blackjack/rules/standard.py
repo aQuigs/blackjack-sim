@@ -1,5 +1,6 @@
 from blackjack.action import Action
 from blackjack.entities.hand import Hand
+from blackjack.entities.state import Outcome
 from blackjack.rules.base import HandValue, Rules
 
 
@@ -38,3 +39,19 @@ class StandardBlackjackRules(Rules):
 
     def can_continue(self, hand: Hand, game_state: dict[str, object]) -> bool:
         return not self.is_bust(hand)
+
+    def determine_outcome(self, player_hand: Hand, dealer_hand: Hand) -> Outcome:
+        if self.is_bust(player_hand):
+            return Outcome.LOSE
+        if self.is_bust(dealer_hand):
+            return Outcome.WIN
+
+        player_value = self.hand_value(player_hand).value
+        dealer_value = self.hand_value(dealer_hand).value
+
+        if player_value > dealer_value:
+            return Outcome.WIN
+        elif player_value < dealer_value:
+            return Outcome.LOSE
+        else:
+            return Outcome.PUSH

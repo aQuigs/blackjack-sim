@@ -35,3 +35,6 @@ class Rules:
 
     def can_continue(self, hand: Hand, game_state: dict[str, object]) -> bool:
         raise NotImplementedError
+
+    def determine_outcome(self, player_hand: Hand, dealer_hand: Hand):
+        raise NotImplementedError
