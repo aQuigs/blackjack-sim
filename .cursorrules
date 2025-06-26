@@ -1,131 +1,106 @@
 # Cursor Rules for blackjack-sim
 
 ## Process & Workflow
-- ALWAYS run `pre-commit run --all-files` after making any code changes.
-- Do not consider a change complete until all pre-commit hooks pass (including tests, lint, type checks, and coverage).
-- If pre-commit fails, fix the issues and rerun until it passes.
-- Communicate this requirement in all future code reviews and automation.
-- Also be willing to update .cursorrules to help remember context.
-- Don't ever pip install anything directly. Use requirements.txt.
-- Make changes file by file and give me a chance to spot mistakes.
-- Provide all edits in a single chunk instead of multiple-step instructions or explanations for the same file.
-- When pre-commit fails due to missing test coverage, automatically add or update tests to cover the missing lines/files, especially for new or changed code, without asking for confirmation.
+- ALWAYS run `pre-commit run --all-files` after making any code changes
+- Do not consider a change complete until all pre-commit hooks pass (tests, lint, type checks, coverage)
+- If pre-commit fails, fix issues and rerun until it passes
+- When pre-commit fails due to missing test coverage, automatically add/update tests without asking
+- Don't ever pip install directly - use requirements.txt
+- Make changes file by file and provide all edits in a single chunk
+- Update .cursorrules to help remember context of your mistakes
 
 ## Communication
-- Never use apologies.
-- Avoid giving feedback about understanding in comments or documentation.
-- Don't summarize changes made.
-- Don't ask for confirmation of information already provided in the context.
-- Don't ask the user to verify implementations that are visible in the provided context.
-- Don't suggest updates or changes to files when there are no actual modifications needed.
-- Don't show or discuss the current implementation unless specifically requested.
-- Don't invent changes other than what's explicitly requested. If you have clever ideas, ask.
-- Always provide links to the real files, not the context generated file.
+- Never use apologies
+- Don't summarize changes made
+- Don't ask for confirmation of information already provided
+- Don't suggest updates when no modifications are needed
+- Don't show current implementation unless specifically requested
+- Don't invent changes other than what's explicitly requested
+- Always provide links to real files, not context generated files
 
-## Code Style & Readability
-- Prefer descriptive, explicit variable names over short, ambiguous ones to enhance code readability.
-- Adhere to the existing coding style in the project for consistency.
-- Use empty lines to separate logical sections of code for improved readability, especially in function and class bodies.
-- Do not remove empty newlines within a function. These exist for clarity and should be preserved.
-- Don't suggest whitespace changes.
-- Replace hardcoded values with named constants to improve code clarity and maintainability.
-- Don't use uppercase std types when defining types. E.g. instead of List use list
+## Code Style & Quality
+- Use descriptive, explicit variable names over short, ambiguous ones
+- Adhere to existing coding style for consistency
+- Use empty lines to separate logical sections (preserve existing ones)
+- Replace hardcoded values with named constants
+- Don't use uppercase std types (e.g., use `list` not `List`)
+- Implement robust error handling and logging
+- Consider edge cases and include assertions to validate assumptions
+- Always verify information before presenting it
 
-## Code Quality & Safety
-- Always verify information before presenting it. Do not make assumptions or speculate without clear evidence.
-- Pay attention to preserving existing structures. Don't remove unrelated code or functionalities.
-- Implement robust error handling and logging where necessary.
-- Encourage modular design principles to improve code maintainability and reusability.
-- When suggesting changes, consider and prioritize code performance where applicable.
-- Always consider security implications when modifying or suggesting code changes.
-- Ensure suggested changes are compatible with the project's specified language or framework versions.
-- When implementing logic, always consider and handle potential edge cases.
-- Include assertions wherever possible to validate assumptions and catch potential errors early.
+## Testing Philosophy: Testing Without Mocks
 
-## Testing
+### Core Principles
+- No mocks/stubs for internal code (only for network, filesystem, DB, 3rd-party APIs)
+- All tests are narrow, state-based, and sociable
+- Use real dependencies, not test doubles, for internal code
+- **CRITICAL: All tests must invoke the codebase from the top-level entrypoint. Never instantiate classes or call internal methods directly**
+- Coverage must not fall below 90%
+- Test names reflect externally-visible behavior
+- Verify all new test generation with pytest before calling it successful
 
-**Quick Checklist for Contributors and Automation:**
-- [ ] No mocks/stubs for internal code (only for network, filesystem, DB, or 3rd-party APIs)
+### Quick Checklist
+- [ ] No mocks/stubs for internal code
 - [ ] All tests are narrow, state-based, and sociable
-- [ ] Use real dependencies, not test doubles, for internal code
-- [ ] Test helpers/factories are used for setup (in test utils or next to code)
-- [ ] All public interfaces have at least one error/edge case test
-- [ ] Coverage must not fall below 90%
+- [ ] Use real dependencies, not test doubles
+- [ ] Test helpers/factories used for setup
+- [ ] All public interfaces have error/edge case tests
+- [ ] Coverage ≥ 90%
 - [ ] Test names reflect externally-visible behavior
 
-**Definitions:**
-- "Internal code": Any code in this repository or under your direct control.
-- "External dependency": Network, filesystem, database, or third-party APIs/libraries.
+### Definitions
+- **Internal code**: Any code in this repository or under your direct control
+- **External dependency**: Network, filesystem, database, or third-party APIs/libraries
 
-**Examples:**
+### Examples
 - ✅ Good: `assert game.score() == 21` (state-based, externally-visible)
 - ❌ Bad: `mock_player.assert_called_with('hit')` (interaction-based, mocks internal code)
 
-- Suggest or include appropriate unit tests for new or modified code.
-- Ensure test coverage for all new/changed code. Coverage must not fall below 90% (enforced by pre-commit).
-- All public logic and infrastructure interfaces must have at least one test for an error or edge case.
-- Test names and file structure should reflect externally-visible behavior and group by unit-under-test.
+### Patterns
 
-- **Testing Philosophy: Testing Without Mocks (James Shore)**
-  - No mocks, stubs, or test doubles for internal code. Only use them for truly external dependencies (network, filesystem, database, third-party APIs).
-  - All nullables or configurable dependencies used for testing must be production code, documented, and available for use in production scenarios—not test-only helpers or subclasses.
-  - When you need to control or observe internal dependencies in tests, use a nullable or configurable implementation that is part of the real system, not a test double.
-  - Write "narrow" tests that focus on a specific concept or behavior, not broad end-to-end tests.
-  - Use state-based assertions: check the output or state, not the interactions or method calls.
-  - Tests must follow a clear "arrange, act, assert" structure and describe externally-visible behavior, not implementation details. Tests should serve as documentation for the unit under test.
-  - Do not use auto-mocking frameworks, dependency-injection frameworks, or other "magic" tools to remove test setup busywork.
-  - Tests must be fast and deterministic. Only execute "slow" code (network, filesystem, etc.) when that behavior is explicitly part of the unit under test.
+#### Logic Code
+- Prefer pure functions and immutable objects
+- For mutable objects, provide observable state (getters or events)
+- Wrap third-party libraries in your own code
+- All classes should have constructors with sensible defaults
+- Use dependency methods in assertions when behavior isn't relevant
 
-  ### Patterns for Logic Code
-  - Prefer pure functions and immutable objects. For mutable objects, provide observable state (getters or events).
-  - Wrap third-party libraries in your own code. Only test your wrapper, not the third-party code directly.
-  - All classes should have a constructor or factory with sensible defaults, allowing instantiation without parameters for tests. If not possible, provide a test-specific factory with overridable defaults.
-  - When a dependency's behavior is not relevant, use the dependency to help define test expectations (e.g., use collaborator methods in assertions).
+#### Infrastructure Code
+- Wrap external systems in single-purpose classes
+- Provide `createNull()` or equivalent factory for infrastructure wrappers
+- Nullables must be production code and testable
+- Allow nullables to be configured with named, optional parameters
+- Provide output tracking (events/logs) for infrastructure that writes
+- Provide methods to simulate events for infrastructure that responds to events
 
-  ### Patterns for Infrastructure Code
-  - Wrap all external systems (network, database, filesystem, etc.) in a single-purpose class. Do not create complex webs of dependencies in infrastructure code.
-  - Test infrastructure wrappers with real external systems in focused, isolated tests. Use local, disposable test systems whenever possible.
-  - Provide a `createNull()` or equivalent factory for infrastructure wrappers that disables external communication but behaves normally otherwise. Nullables must be production code and testable.
-  - For nullables, stub out only the third-party code, not your own code. Implement the bare minimum needed for your code to run.
-  - Allow nullables to be configured with the responses your tests need, using named and optional parameters.
-  - For dependencies that write to infrastructure, provide a way to track outputs (e.g., via events or logs) for assertions.
-  - For dependencies that respond to events, provide methods to simulate those events in tests.
+#### Architectural Patterns
+- Inject real dependencies (not test doubles) into unit under test
+- Structure application with logic and infrastructure as peers under application layer
+- Application layer coordinates logic and infrastructure (Logic Sandwich)
+- Constructors must not perform significant work
+- Use helper functions/factories in tests for signature shielding
 
-  ### Architectural Patterns
-  - Inject real dependencies (not test doubles) into the unit under test. Each test should overlap with its dependencies' and dependents' tests, forming a mesh that covers the system.
-  - Structure your application so that logic and infrastructure are peers under the application layer, coordinated by the application (A-Frame Architecture is optional).
-  - Application layer should coordinate logic and infrastructure, reading from infrastructure, processing with logic, and writing back (Logic Sandwich / Traffic Cop).
-  - Constructors must not perform significant work (no network, no file I/O, no long calculations).
-  - Use helper functions or factories in tests to shield tests from changes in method signatures (Signature Shielding). Test helpers/factories should be in a dedicated test utility module or next to the code they help test.
+#### Observability & Output Tracking
+- All logic code must support output tracking via event log and structured results
+- Event log records all externally-visible events, actions, and outcomes
+- Structured results available for each top-level request
+- Tests assert only on externally-visible behavior using outputs
+- Tests interact only through public interfaces
+- No test may manipulate internal state or methods
 
-  ### Test Setup and Maintenance
-  - The main test suite should consist of narrow, sociable tests. Broad integration tests may be added as a safety net, but their failure indicates a gap in the main suite.
-  - Use helper functions and test-specific factories to keep test setup simple and maintainable.
-  - Ensure it is easy to test edge cases, error conditions, and timeouts.
+#### Infrastructure/Nullability Pattern ("Fake-It-Once-You-Make-It")
+- Single production constructor for main case
+- Clear factory/classmethod for nullability (e.g., `create_null`)
+- Avoid hacks - use constructor and public API
+- Null/configurable path must be real, documented, production feature
+- Required for all infrastructure wrappers to support mockless testing
 
-  ### Tradeoffs and Exceptions
-  - Some code needed for tests (especially for infrastructure) will be written as production code. This is acceptable and must be maintained as production-quality code.
-  - Some third-party infrastructure code must be mimicked with hand-written stubs. These should be minimal and only cover what is needed for your code to run.
-  - Sociable tests may cause multiple failures for a single bug. This is expected and acceptable.
-
-  - All contributors and automation must follow these rules for all unit tests. If a test or code change cannot follow these patterns, document the reason and discuss before proceeding.
-
-  ### Observability & Output Tracking
-  - All logic code (e.g., Game, Simulation) must support output tracking via an event log and structured results.
-  - The event log should record all externally-visible events, actions, and outcomes in a testable, structured way.
-  - Structured results (e.g., winner, hands, actions) must be available for each top-level request (e.g., a game or simulation run).
-  - Tests must assert only on externally-visible behavior using these outputs, never on internal state or implementation details.
-  - Tests must interact with the system only through public interfaces (e.g., run a game, observe results/event log).
-  - No test may manipulate or patch internal state or methods; all setup must use public configuration or dependency injection.
-  - All contributors and automation must follow these rules for all new and existing code and tests.
-
-  ### Infrastructure/Nullability Pattern ("Fake-It-Once-You-Make-It")
-  - Always use a single, production constructor for the main case (e.g., live randomness).
-  - Provide a clear, production-meaningful factory/classmethod for nullability or configurability (e.g., create_null).
-  - Avoid hacks like __new__ or direct attribute assignment; always use the constructor and public API.
-  - The null/configurable path must be a real, documented, production feature—not a test hook or test-only code.
-  - This pattern is required for all infrastructure wrappers (e.g., randomness, time, etc.) to support mockless, state-based testing.
-  - See the latest Shoe implementation for the preferred approach.
+### Test Setup and Maintenance
+- Main test suite: narrow, sociable tests
+- Use helper functions and test-specific factories
+- Ensure easy testing of edge cases, error conditions, timeouts
+- Some production code needed for tests is acceptable and must be maintained
+- Sociable tests may cause multiple failures for single bug (expected)
 
 ## Context Awareness
-- Remember to check the context generated file for the current file contents and implementations.
+- Check context generated file for current file contents and implementations

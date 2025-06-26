@@ -6,6 +6,7 @@ class Player:
     def __init__(self, name: str, strategy: Strategy) -> None:
         if strategy is None:
             raise ValueError("Strategy cannot be None")
+
         self.name: str = name
         self.hand: Hand = Hand()
         self.strategy: Strategy = strategy
@@ -15,5 +16,3 @@ class Player:
 
     def __repr__(self) -> str:
         return f"Player(name={self.name!r}, hand={self.hand!r})"
-
-    # Future: add betting, strategy, etc.
