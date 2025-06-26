@@ -4,6 +4,8 @@ from typing import Callable, List, Optional, Sequence
 from blackjack.action import Action
 from blackjack.entities.player import Player
 from blackjack.entities.shoe import Shoe
+from blackjack.entities.state import Outcome, ProperState, TerminalState, Turn
+from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.game_events import (
     BlackjackEvent,
     BustEvent,
@@ -40,9 +42,25 @@ class Game:
         self.dealer_strategy: Strategy = dealer_strategy
         self.event_log: List[GameEvent] = []
         self._output_tracker = output_tracker or self.event_log.append
+        self.state_transition_graph = StateTransitionGraph()
 
     def _track(self, event: GameEvent) -> None:
         self._output_tracker(event)
+
+    def _make_proper_state(self, hand, is_player):
+        hand_value = self.rules.hand_value(hand)
+        upcard = self.dealer.hand.cards[0] if self.dealer.hand.cards else None
+        upcard_rank = upcard.rank if upcard else None
+        turn = Turn.PLAYER if is_player else Turn.DEALER
+        return ProperState(
+            player_hand_value=hand_value.value,
+            player_hand_soft=hand_value.soft,
+            dealer_upcard_rank=upcard_rank,
+            turn=turn,
+        )
+
+    def get_state_transition_graph(self):
+        return self.state_transition_graph
 
     def initial_deal(self) -> None:
         for _ in range(2):
@@ -56,10 +74,13 @@ class Game:
             self._track(GameEvent(GameEventType.DEAL, DealEvent(to=self.dealer.name, card=repr(card))))
 
     def play_turn(self, player: Player, strategy: Strategy) -> bool:
+        prev_state = self._make_proper_state(player.hand, is_player=True)
         while True:
             hand_value = self.rules.hand_value(player.hand)
 
             if self.rules.is_bust(player.hand):
+                outcome_state = TerminalState(Outcome.LOSE)
+                self.state_transition_graph.add_transition(prev_state, Action.GAME_END, outcome_state)
                 self._track(
                     GameEvent(
                         GameEventType.BUST,
@@ -70,6 +91,8 @@ class Game:
                 return False
 
             if self.rules.is_blackjack(player.hand):
+                outcome_state = TerminalState(Outcome.WIN)
+                self.state_transition_graph.add_transition(prev_state, Action.GAME_END, outcome_state)
                 self._track(
                     GameEvent(
                         GameEventType.BLACKJACK,
@@ -80,21 +103,30 @@ class Game:
                 return False
 
             if hand_value.value == 21:
+                outcome_state = TerminalState(Outcome.WIN)
+                self.state_transition_graph.add_transition(prev_state, Action.GAME_END, outcome_state)
                 self._track(
                     GameEvent(GameEventType.TWENTY_ONE, TwentyOneEvent(player=player.name, hand=repr(player.hand)))
                 )
                 return True
 
-            if self.do_player_action(player, strategy):
+            # Get available actions and check if there are any
+            actions = self.rules.available_actions(player.hand, {})
+            if not actions:
+                self._track(
+                    GameEvent(GameEventType.NO_ACTIONS, NoActionsEvent(player=player.name, hand=repr(player.hand)))
+                )
+                return False
+
+            action_taken = self.do_player_action(player, strategy, prev_state, actions)
+            if action_taken[0]:
                 return True
+            prev_state = action_taken[1]
 
-    def do_player_action(self, player: Player, strategy: Strategy) -> bool:
+    def do_player_action(
+        self, player: Player, strategy: Strategy, prev_state: ProperState, actions: list[Action]
+    ) -> tuple[bool, ProperState]:
         hand_value = self.rules.hand_value(player.hand)
-        actions = self.rules.available_actions(player.hand, {})
-        if not actions:
-            self._track(GameEvent(GameEventType.NO_ACTIONS, NoActionsEvent(player=player.name, hand=repr(player.hand))))
-            raise RuntimeError(f"{player.name} has no available actions with hand: {player.hand} ({hand_value})")
-
         action = strategy.choose_action(player.hand, actions, {})
         self._track(
             GameEvent(
@@ -105,11 +137,15 @@ class Game:
         logging.info(f"{player.name} chooses {action.name} with hand: {player.hand} ({hand_value})")
 
         if action == Action.STAND:
-            return True
+            next_state = self._make_proper_state(player.hand, is_player=True)
+            self.state_transition_graph.add_transition(prev_state, action, next_state)
+            return True, next_state
         elif action == Action.HIT:
             card = self.shoe.deal_card()
             player.hand.add_card(card)
             hv_new = self.rules.hand_value(player.hand)
+            next_state = self._make_proper_state(player.hand, is_player=True)
+            self.state_transition_graph.add_transition(prev_state, action, next_state)
             self._track(
                 GameEvent(
                     GameEventType.HIT,
@@ -117,7 +153,7 @@ class Game:
                 )
             )
             logging.info(f"{player.name} receives: {card}. New hand: {player.hand} ({hv_new})")
-            return False
+            return False, next_state
         else:
             self._track(
                 GameEvent(

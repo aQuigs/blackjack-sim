@@ -23,7 +23,7 @@
 - Adhere to existing coding style for consistency
 - Use empty lines to separate logical sections (preserve existing ones)
 - Replace hardcoded values with named constants
-- Don't use uppercase std types (e.g., use `list` not `List`)
+- Don't use uppercase std types (e.g., use `list` not `List` and `dict` not `Dict`)
 - Implement robust error handling and logging
 - Consider edge cases and include assertions to validate assumptions
 - Always verify information before presenting it
