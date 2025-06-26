@@ -105,3 +105,54 @@ def test_blackjack_and_bust_are_reported():
     bust_events = [e for e in event_log if e.type.name == "BUST"]
     assert len(bust_events) == 1
     assert bust_events[0].payload.player == "Player 1"
+
+
+def test_event_log_consistency_simple_game():
+    """Test that the event log contains all expected events in order for a simple game."""
+    event_log = []
+    shoe_cards = [
+        Card("10", "♠"),  # Player first
+        Card("9", "♣"),  # Dealer first
+        Card("7", "♦"),  # Player second
+        Card("8", "♣"),  # Dealer second
+        Card("4", "♠"),  # Player hit
+    ]
+    cli = BlackjackCLI.create_null(
+        num_decks=1,
+        player_strategy=AlwaysHitStrategy(),
+        dealer_strategy=AlwaysStandStrategy(),
+        shoe_cards=list(reversed(shoe_cards)),
+        output_tracker=event_log.append,
+    )
+    cli.run(num_players=1, printable=False)
+    # Check event types in order
+    event_types = [e.type.name for e in event_log]
+    assert event_types[:4] == ["DEAL", "DEAL", "DEAL", "DEAL"]  # Initial deal
+    assert "CHOOSE_ACTION" in event_types
+    assert "HIT" in event_types
+    assert any(e.type.name == "BUST" or e.type.name == "BLACKJACK" or e.type.name == "TWENTY_ONE" for e in event_log)
+
+
+def test_invalid_action_raises_runtime_error():
+    """Test that attempting an invalid action raises RuntimeError."""
+
+    class InvalidActionStrategy(Strategy):
+        def choose_action(self, hand, available_actions, game_state):
+            from blackjack.action import Action
+
+            return Action.GAME_END  # Not a valid action in this context
+
+    shoe_cards = [
+        Card("10", "♠"),  # Player first
+        Card("9", "♣"),  # Dealer first
+        Card("7", "♦"),  # Player second
+        Card("8", "♣"),  # Dealer second
+    ]
+    cli = BlackjackCLI.create_null(
+        num_decks=1,
+        player_strategy=InvalidActionStrategy(),
+        dealer_strategy=AlwaysStandStrategy(),
+        shoe_cards=list(reversed(shoe_cards)),
+    )
+    with pytest.raises(RuntimeError, match="No valid action available"):
+        cli.run(num_players=1, printable=False)

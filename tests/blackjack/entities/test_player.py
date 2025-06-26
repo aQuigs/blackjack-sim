@@ -158,3 +158,41 @@ def test_game_push():
     player_events = [e for e in event_log if getattr(e.payload, "player", None) == "Player 1"]
     assert not any(e.type.name == "BUST" for e in player_events)
     assert not any(e.type.name == "BLACKJACK" for e in player_events)
+
+
+def test_state_transition_graph_simple_game():
+    """Test that the state transition graph contains expected transitions for a simple game."""
+    from blackjack.action import Action
+    from blackjack.entities.state import TerminalState
+
+    shoe_cards = [
+        Card("10", "♠"),  # Player first
+        Card("9", "♣"),  # Dealer first
+        Card("7", "♦"),  # Player second
+        Card("8", "♣"),  # Dealer second
+        Card("4", "♠"),  # Player hit
+    ]
+    cli = BlackjackCLI.create_null(
+        num_decks=1,
+        player_strategy=AlwaysHitStrategy(),
+        dealer_strategy=StandardDealerStrategy(),
+        shoe_cards=list(reversed(shoe_cards)),
+    )
+    result = cli.run(num_players=1, printable=False)
+    graph = result.state_transition_graph.get_graph()
+    # There should be at least one transition from the initial state via HIT
+    found = False
+    for _state, actions in graph.items():
+        for action, _next_states in actions.items():
+            if action == Action.HIT:
+                found = True
+    assert found
+    # There should be a GAME_END transition to a TerminalState
+    found_terminal = False
+    for _state, actions in graph.items():
+        for action, next_states in actions.items():
+            if action == Action.GAME_END:
+                for next_state in next_states:
+                    if isinstance(next_state, TerminalState):
+                        found_terminal = True
+    assert found_terminal
