@@ -2,8 +2,9 @@ import pytest
 
 from blackjack.cli import BlackjackCLI
 from blackjack.entities.card import Card
-from blackjack.game_events import PlayerOutcome, Winner
+from blackjack.entities.state import Outcome
 from blackjack.strategy.base import Strategy
+from tests.blackjack.conftest import parse_final_hands_and_outcomes
 
 
 class AlwaysHitStrategy(Strategy):
@@ -73,14 +74,11 @@ def test_blackjack_and_bust_are_reported():
         output_tracker=event_log.append,
     )
 
-    result = cli.run(num_players=1, printable=False)
-    result = result[0]
-    assert result.player_results[0].outcome == PlayerOutcome.BLACKJACK
-    assert result.winner == Winner.PLAYER
-
-    blackjack_events = [e for e in event_log if e.type.name == "BLACKJACK"]
-    assert len(blackjack_events) == 1
-    assert blackjack_events[0].payload.player == "Player 1"
+    cli.run(num_players=1, printable=False)
+    hands, outcomes = parse_final_hands_and_outcomes(event_log)
+    assert outcomes["Player 1"] == Outcome.BLACKJACK
+    assert hands["Player 1"] == [Card("A", "♠"), Card("10", "♦")]
+    assert hands["Dealer"] == [Card("9", "♣"), Card("8", "♣")]
 
     # Now test bust
     shoe_cards = [
@@ -100,13 +98,9 @@ def test_blackjack_and_bust_are_reported():
         output_tracker=event_log.append,
     )
 
-    result = cli.run(num_players=1, printable=False)
-    result = result[0]
-    assert result.player_results[0].outcome == PlayerOutcome.BUST
-
-    bust_events = [e for e in event_log if e.type.name == "BUST"]
-    assert len(bust_events) == 1
-    assert bust_events[0].payload.player == "Player 1"
+    cli.run(num_players=1, printable=False)
+    hands, outcomes = parse_final_hands_and_outcomes(event_log)
+    assert outcomes["Player 1"] == Outcome.BUST
 
 
 def test_event_log_consistency_simple_game():

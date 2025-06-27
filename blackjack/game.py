@@ -15,8 +15,7 @@ from blackjack.game_events import (
     GameEventType,
     HitEvent,
     NoActionsEvent,
-    PlayerOutcome,
-    PlayerResult,
+    RoundResultEvent,
     TwentyOneEvent,
 )
 from blackjack.rules.base import Rules
@@ -230,21 +229,6 @@ class Game:
 
         return last_player_states
 
-    def compute_player_results(self) -> list[PlayerResult]:
-        player_results = []
-
-        for player in self.players:
-            hand = list(player.hand.cards)
-            if self.rules.is_bust(player.hand):
-                outcome = PlayerOutcome.BUST
-            elif self.rules.is_blackjack(player.hand):
-                outcome = PlayerOutcome.BLACKJACK
-            else:
-                outcome = PlayerOutcome.ACTIVE
-            player_results.append(PlayerResult(name=player.name, hand=hand, outcome=outcome))
-
-        return player_results
-
     def play_round(self) -> StateTransitionGraph:
         self.event_log.clear()
         self.initial_deal()
@@ -252,9 +236,31 @@ class Game:
         last_player_states = self.play_turns()
 
         for player in self.players:
+            hand = list(player.hand.cards)
+            outcome = self.rules.determine_outcome(player.hand, self.dealer.hand)
+
             last_state = last_player_states[player.name]
             if isinstance(last_state, ProperState):
                 final_outcome = self.rules.determine_outcome(player.hand, self.dealer.hand)
                 self.state_transition_graph.add_transition(last_state, Action.GAME_END, TerminalState(final_outcome))
+
+            self._track(
+                GameEvent(
+                    GameEventType.ROUND_RESULT,
+                    RoundResultEvent(
+                        name=player.name,
+                        hand=hand,
+                        outcome=outcome,
+                    ),
+                )
+            )
+
+        # Emit ROUND_RESULT for dealer (no outcome)
+        dealer_hand = list(self.dealer.hand.cards)
+        self._track(
+            GameEvent(
+                GameEventType.ROUND_RESULT, RoundResultEvent(name=self.dealer.name, hand=dealer_hand, outcome=None)
+            )
+        )
 
         return self.state_transition_graph

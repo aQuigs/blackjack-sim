@@ -6,10 +6,10 @@ import click
 from blackjack.entities.deck_schema import StandardBlackjackSchema
 from blackjack.entities.random_wrapper import RandomWrapper
 from blackjack.entities.shoe import Shoe
+from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.game import Game
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.strategy import RandomStrategy, StandardDealerStrategy
-from blackjack.entities.state_transition_graph import StateTransitionGraph
 
 
 class BlackjackCLI:

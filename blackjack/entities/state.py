@@ -11,6 +11,8 @@ class Outcome(Enum):
     WIN = auto()
     LOSE = auto()
     PUSH = auto()
+    BUST = auto()
+    BLACKJACK = auto()
     IN_PROGRESS = auto()
 
 
@@ -64,11 +66,11 @@ class ProperState(AbstractState):
 
 class TerminalState(AbstractState):
     """
-    Represents a terminal state (win/lose/push) in a blackjack game.
+    Represents a terminal state (win/lose/push/bust/blackjack) in a blackjack game.
     """
 
     def __init__(self, outcome: Outcome):
-        assert outcome in (Outcome.WIN, Outcome.LOSE, Outcome.PUSH)
+        assert outcome in (Outcome.WIN, Outcome.LOSE, Outcome.PUSH, Outcome.BUST, Outcome.BLACKJACK)
         self.outcome = outcome
 
     def __eq__(self, other):

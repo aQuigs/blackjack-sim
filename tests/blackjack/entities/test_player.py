@@ -1,8 +1,9 @@
 from blackjack.cli import BlackjackCLI
 from blackjack.entities.card import Card
-from blackjack.game_events import PlayerOutcome, Winner
+from blackjack.entities.state import Outcome
 from blackjack.strategy.base import Strategy
 from blackjack.strategy.strategy import StandardDealerStrategy
+from tests.blackjack.conftest import parse_final_hands_and_outcomes
 
 
 class AlwaysHitStrategy(Strategy):
@@ -41,12 +42,13 @@ def test_game_all_players_bust():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=2, printable=False)[0]
-    assert result.player_results[0].outcome == PlayerOutcome.BUST
-    assert result.player_results[1].outcome == PlayerOutcome.BUST
-    assert result.player_results[0].hand == [Card("10", "♠"), Card("2", "♣"), Card("8", "♦"), Card("5", "♣")]
-    assert result.player_results[1].hand == [Card("10", "♥"), Card("2", "♦"), Card("8", "♠"), Card("5", "♦")]
-    assert result.dealer_hand == [Card("6", "♣"), Card("7", "♥")]
+    cli.run(num_players=2, printable=False)
+    hands, outcomes = parse_final_hands_and_outcomes(event_log)
+    assert outcomes["Player 1"] == Outcome.BUST
+    assert outcomes["Player 2"] == Outcome.BUST
+    assert hands["Player 1"] == [Card("10", "♠"), Card("2", "♣"), Card("8", "♦"), Card("5", "♣")]
+    assert hands["Player 2"] == [Card("10", "♥"), Card("2", "♦"), Card("8", "♠"), Card("5", "♦")]
+    assert hands["Dealer"] == [Card("6", "♣"), Card("7", "♥")]
     player1_actions = [
         e.payload.action.name
         for e in event_log
@@ -81,12 +83,13 @@ def test_game_all_players_blackjack():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=2, printable=False)[0]
-    for player_result in result.player_results:
-        assert player_result.outcome == PlayerOutcome.BLACKJACK
-    assert result.player_results[0].hand == [Card("A", "♠"), Card("K", "♠")]
-    assert result.player_results[1].hand == [Card("A", "♥"), Card("K", "♥")]
-    assert result.dealer_hand == [Card("9", "♣"), Card("8", "♣")]
+    cli.run(num_players=2, printable=False)
+    hands, outcomes = parse_final_hands_and_outcomes(event_log)
+    assert outcomes["Player 1"] == Outcome.BLACKJACK
+    assert outcomes["Player 2"] == Outcome.BLACKJACK
+    assert hands["Player 1"] == [Card("A", "♠"), Card("K", "♠")]
+    assert hands["Player 2"] == [Card("A", "♥"), Card("K", "♥")]
+    assert hands["Dealer"] == [Card("9", "♣"), Card("8", "♣")]
     player1_events = [
         e for e in event_log if getattr(e.payload, "player", None) == "Player 1" and e.type.name == "BLACKJACK"
     ]
@@ -116,11 +119,11 @@ def test_player_wins_when_dealer_busts():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=1, printable=False)[0]
-    assert result.player_results[0].outcome == PlayerOutcome.ACTIVE
-    assert result.winner == Winner.PLAYER
-    assert result.player_results[0].hand == [Card("10", "♠"), Card("Q", "♠")]
-    assert result.dealer_hand == [Card("9", "♠"), Card("5", "♣"), Card("2", "♦"), Card("8", "♣")]
+    cli.run(num_players=1, printable=False)
+    hands, outcomes = parse_final_hands_and_outcomes(event_log)
+    assert outcomes["Player 1"] == Outcome.WIN
+    assert hands["Player 1"] == [Card("10", "♠"), Card("Q", "♠")]
+    assert hands["Dealer"] == [Card("9", "♠"), Card("5", "♣"), Card("2", "♦"), Card("8", "♣")]
     dealer_actions = [
         e.payload.action.name
         for e in event_log
@@ -150,11 +153,11 @@ def test_game_push():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=1, printable=False)[0]
-    assert result.player_results[0].outcome == PlayerOutcome.ACTIVE
-    assert result.winner == Winner.PUSH
-    assert result.player_results[0].hand == [Card("10", "♠"), Card("Q", "♠")]
-    assert result.dealer_hand == [Card("10", "♣"), Card("Q", "♣")]
+    cli.run(num_players=1, printable=False)
+    hands, outcomes = parse_final_hands_and_outcomes(event_log)
+    assert outcomes["Player 1"] == Outcome.PUSH
+    assert hands["Player 1"] == [Card("10", "♠"), Card("Q", "♠")]
+    assert hands["Dealer"] == [Card("10", "♣"), Card("Q", "♣")]
     player_events = [e for e in event_log if getattr(e.payload, "player", None) == "Player 1"]
     assert not any(e.type.name == "BUST" for e in player_events)
     assert not any(e.type.name == "BLACKJACK" for e in player_events)
@@ -178,8 +181,7 @@ def test_state_transition_graph_simple_game():
         dealer_strategy=StandardDealerStrategy(),
         shoe_cards=list(reversed(shoe_cards)),
     )
-    result = cli.run(num_players=1, printable=False)[0]
-    graph = result.state_transition_graph.get_graph()
+    graph = cli.run(num_players=1, printable=False).get_graph()
     # There should be at least one transition from the initial state via HIT
     found = False
     for _state, actions in graph.items():
@@ -196,3 +198,32 @@ def test_state_transition_graph_simple_game():
                     if isinstance(next_state, TerminalState):
                         found_terminal = True
     assert found_terminal
+
+
+def test_normal_win_and_loss():
+    # Player 1: 10♠, 9♠ (19)
+    # Player 2: 8♠, 7♠ (15)
+    # Dealer: 10♣, 8♣ (18)
+    shoe_cards = [
+        Card("10", "♠"),  # P1 first card
+        Card("8", "♠"),  # P2 first card
+        Card("10", "♣"),  # Dealer first card
+        Card("9", "♠"),  # P1 second card
+        Card("7", "♠"),  # P2 second card
+        Card("8", "♣"),  # Dealer second card
+    ]
+    event_log = []
+    cli = BlackjackCLI.create_null(
+        num_decks=1,
+        player_strategy=AlwaysStandStrategy(),
+        dealer_strategy=StandardDealerStrategy(),
+        shoe_cards=list(reversed(shoe_cards)),
+        output_tracker=event_log.append,
+    )
+    cli.run(num_players=2, printable=False)
+    hands, outcomes = parse_final_hands_and_outcomes(event_log)
+    assert outcomes["Player 1"] == Outcome.WIN
+    assert outcomes["Player 2"] == Outcome.LOSE
+    assert hands["Player 1"] == [Card("10", "♠"), Card("9", "♠")]
+    assert hands["Player 2"] == [Card("8", "♠"), Card("7", "♠")]
+    assert hands["Dealer"] == [Card("10", "♣"), Card("8", "♣")]

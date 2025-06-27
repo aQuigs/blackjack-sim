@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 from blackjack.action import Action
 from blackjack.entities.card import Card
-from blackjack.entities.state_transition_graph import StateTransitionGraph
+from blackjack.entities.state import Outcome
 
 
 class GameEventType(Enum):
@@ -16,12 +16,7 @@ class GameEventType(Enum):
     CHOOSE_ACTION = auto()
     HIT = auto()
     INVALID_ACTION = auto()
-
-
-class PlayerOutcome(Enum):
-    BUST = auto()
-    BLACKJACK = auto()
-    ACTIVE = auto()
+    ROUND_RESULT = auto()
 
 
 class Winner(Enum):
@@ -89,10 +84,18 @@ class InvalidActionEvent:
 class PlayerResult:
     name: str
     hand: list[Card]
-    outcome: PlayerOutcome
+    outcome: Outcome
 
 
 @dataclass(frozen=True)
 class GameEvent:
     type: GameEventType
     payload: Any
+
+
+@dataclass(frozen=True)
+class RoundResultEvent:
+    name: str
+    hand: list[Card]
+    outcome: Optional[Outcome] = None  # Dealer will have outcome=None
+    winner: Optional[Winner] = None  # Only set for single-player games

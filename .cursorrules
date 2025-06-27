@@ -105,3 +105,6 @@
 
 ## Context Awareness
 - Check context generated file for current file contents and implementations
+
+# CRITICAL: NEVER add comments that restate or explain what the code is doing, especially in tests.
+# This includes comments like '# Check outcome via event_log' or similar. Violating this rule is a critical error.

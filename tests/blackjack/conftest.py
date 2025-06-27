@@ -3,6 +3,7 @@ import pytest
 from blackjack.entities.card import Card
 from blackjack.entities.deck_schema import StandardBlackjackSchema
 from blackjack.entities.shoe import Shoe
+from blackjack.game_events import GameEventType
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.base import Strategy
 from blackjack.strategy.strategy import StandardDealerStrategy
@@ -55,3 +56,15 @@ def custom_rules():
         return CustomRules()
 
     return _custom_rules
+
+
+def parse_final_hands_and_outcomes(event_log):
+    hands = {}
+    outcomes = {}
+    for e in event_log:
+        if e.type == GameEventType.ROUND_RESULT:
+            hands[e.payload.name] = e.payload.hand
+            if e.payload.outcome is not None:
+                outcomes[e.payload.name] = e.payload.outcome
+
+    return hands, outcomes

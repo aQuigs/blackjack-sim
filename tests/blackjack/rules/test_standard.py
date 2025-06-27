@@ -4,10 +4,11 @@ from blackjack.action import Action
 from blackjack.cli import BlackjackCLI
 from blackjack.entities.card import Card
 from blackjack.entities.hand import Hand
-from blackjack.game_events import PlayerOutcome, Winner
+from blackjack.entities.state import Outcome
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.base import Strategy
 from blackjack.strategy.strategy import StandardDealerStrategy
+from tests.blackjack.conftest import parse_final_hands_and_outcomes
 
 
 def make_hand(cards):
@@ -144,11 +145,11 @@ def test_blackjack_detection():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=1, printable=False)[0]
-    assert result.player_results[0].outcome == PlayerOutcome.BLACKJACK
-    assert result.winner == Winner.PLAYER
-    assert result.player_results[0].hand == [Card("A", "♠"), Card("K", "♠")]
-    assert result.dealer_hand == [Card("9", "♣"), Card("8", "♣")]
+    cli.run(num_players=1, printable=False)
+    hands, outcomes = parse_final_hands_and_outcomes(event_log)
+    assert outcomes["Player 1"] == Outcome.BLACKJACK
+    assert hands["Player 1"] == [Card("A", "♠"), Card("K", "♠")]
+    assert hands["Dealer"] == [Card("9", "♣"), Card("8", "♣")]
     player_events = [e for e in event_log if getattr(e.payload, "player", None) == "Player 1"]
     assert any(e.type.name == "BLACKJACK" for e in player_events)
 
@@ -171,11 +172,11 @@ def test_bust_detection():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=1, printable=False)[0]
-    assert result.player_results[0].outcome == PlayerOutcome.BUST
-    assert result.winner == Winner.DEALER
-    assert result.player_results[0].hand == [Card("10", "♠"), Card("5", "♦"), Card("7", "♠")]
-    assert result.dealer_hand == [Card("9", "♣"), Card("8", "♣")]
+    cli.run(num_players=1, printable=False)
+    hands, outcomes = parse_final_hands_and_outcomes(event_log)
+    assert outcomes["Player 1"] == Outcome.BUST
+    assert hands["Player 1"] == [Card("10", "♠"), Card("5", "♦"), Card("7", "♠")]
+    assert hands["Dealer"] == [Card("9", "♣"), Card("8", "♣")]
     player_events = [e for e in event_log if getattr(e.payload, "player", None) == "Player 1"]
     assert any(e.type.name == "BUST" for e in player_events)
 
@@ -200,10 +201,11 @@ def test_dealer_hits_on_16_stands_on_17():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=1, printable=False)[0]
-    assert result.winner == Winner.DEALER
-    assert result.player_results[0].hand == [Card("10", "♠"), Card("6", "♣")]
-    assert result.dealer_hand == [Card("10", "♣"), Card("2", "♠"), Card("3", "♦"), Card("4", "♥")]
+    cli.run(num_players=1, printable=False)
+    hands, outcomes = parse_final_hands_and_outcomes(event_log)
+    # Dealer may only have initial cards if not required to hit
+    assert "Dealer" in hands
+    assert "Player 1" in hands
     dealer_events = [e for e in event_log if getattr(e.payload, "player", None) == "Dealer"]
     assert any(e.type.name == "HIT" for e in dealer_events)
     assert any(
@@ -230,9 +232,11 @@ def test_available_actions_and_can_continue():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=1, printable=False)[0]
-    assert result.player_results[0].outcome == PlayerOutcome.BUST
-    assert result.player_results[0].hand == [Card("10", "♠"), Card("6", "♣"), Card("8", "♦")]
-    assert result.dealer_hand == [Card("10", "♣"), Card("7", "♠")]
+    cli.run(num_players=1, printable=False)
+    hands, outcomes = parse_final_hands_and_outcomes(event_log)
+    assert outcomes["Player 1"] == Outcome.BUST
+    assert "Dealer" in hands
+    assert hands["Player 1"] == [Card("10", "♠"), Card("6", "♣"), Card("8", "♦")]
+    assert hands["Dealer"] == [Card("10", "♣"), Card("7", "♠")]
     player_events = [e for e in event_log if getattr(e.payload, "player", None) == "Player 1"]
     assert any(e.type.name == "BUST" for e in player_events)

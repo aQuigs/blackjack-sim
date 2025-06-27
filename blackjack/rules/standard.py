@@ -42,8 +42,12 @@ class StandardBlackjackRules(Rules):
         return not self.is_bust(hand)
 
     def determine_outcome(self, player_hand: Hand, dealer_hand: Hand) -> Outcome:
+        if self.is_blackjack(player_hand):
+            return Outcome.PUSH if self.is_blackjack(dealer_hand) else Outcome.BLACKJACK
+
         if self.is_bust(player_hand):
-            return Outcome.LOSE
+            return Outcome.BUST
+
         if self.is_bust(dealer_hand):
             return Outcome.WIN
 
