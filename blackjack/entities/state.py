@@ -16,7 +16,7 @@ class Outcome(Enum):
     IN_PROGRESS = auto()
 
 
-class AbstractState:
+class GameState:
     """
     Base class for all state types in blackjack.
     """
@@ -24,7 +24,7 @@ class AbstractState:
     pass
 
 
-class ProperState(AbstractState):
+class ProperState(GameState):
     """
     Represents a unique decision point in a blackjack game (not terminal).
     Extensible for splits, doubles, true count, etc.
@@ -64,7 +64,7 @@ class ProperState(AbstractState):
         )
 
 
-class TerminalState(AbstractState):
+class TerminalState(GameState):
     """
     Represents a terminal state (win/lose/push/bust/blackjack) in a blackjack game.
     """
@@ -85,4 +85,22 @@ class TerminalState(AbstractState):
         return f"TerminalState(outcome={self.outcome})"
 
 
-State = Union[ProperState, TerminalState]
+class PreDealState(GameState):
+    """
+    Represents the state before any cards are dealt.
+    """
+
+    def __eq__(self, other):
+        if not isinstance(other, PreDealState):
+            return NotImplemented
+
+        return True
+
+    def __hash__(self):
+        return hash("PreDealState")
+
+    def __repr__(self):
+        return "PreDealState()"
+
+
+State = Union[PreDealState, ProperState, TerminalState]

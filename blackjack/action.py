@@ -5,3 +5,4 @@ class Action(Enum):
     HIT = auto()
     STAND = auto()
     GAME_END = auto()
+    DEAL = auto()

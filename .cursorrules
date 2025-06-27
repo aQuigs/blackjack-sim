@@ -149,3 +149,9 @@ This includes comments like '# Check outcome via event_log' or similar. Violatin
 - [ ] Did you follow every rule in .cursorrules?
 - [ ] Did you check for conflicting or ambiguous rules and resolve them?
 - [ ] Did you update .cursorrules if you found a gap or ambiguity?
+
+# Comments Policy
+- Do not add comments for standard operations, initialization, or transitions unless the code is non-obvious or counterintuitive.
+- Comments must justify a design decision that cannot be made clear through code structure or naming.
+- If in doubt, do not add the comment.
+- Violations are critical errors.

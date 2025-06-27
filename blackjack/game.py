@@ -4,7 +4,7 @@ from typing import Callable, Optional
 from blackjack.action import Action
 from blackjack.entities.player import Player
 from blackjack.entities.shoe import Shoe
-from blackjack.entities.state import ProperState, TerminalState, Turn
+from blackjack.entities.state import PreDealState, ProperState, TerminalState, Turn
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.game_events import (
     BlackjackEvent,
@@ -36,12 +36,11 @@ class Game:
         self.players: list[Player] = [Player(f"Player {i+1}", strategy) for i, strategy in enumerate(player_strategies)]
         self.dealer: Player = Player("Dealer", dealer_strategy)
         self.dealer_strategy: Strategy = dealer_strategy
-        self.event_log: list[GameEvent] = []
-        self._output_tracker = output_tracker or self.event_log.append
+        self.output_tracker = output_tracker or (lambda _: None)
         self.state_transition_graph = state_transition_graph
 
     def _track(self, event: GameEvent) -> None:
-        self._output_tracker(event)
+        self.output_tracker(event)
 
     def _make_proper_state(self, hand, is_player) -> ProperState:
         hand_value = self.rules.hand_value(hand)
@@ -62,6 +61,11 @@ class Game:
             card = self.shoe.deal_card()
             self.dealer.hand.add_card(card)
             self._track(GameEvent(GameEventType.DEAL, DealEvent(to=self.dealer.name, card=card)))
+
+        pre_deal_state = PreDealState()
+        for player in self.players:
+            initial_state = self._make_proper_state(player.hand, is_player=True)
+            self.state_transition_graph.add_transition(pre_deal_state, Action.DEAL, initial_state)
 
     def play_player_turn(self, player: Player, strategy: Strategy) -> tuple[bool, ProperState]:
         prev_state = self._make_proper_state(player.hand, is_player=True)
@@ -223,7 +227,6 @@ class Game:
         return last_player_states
 
     def play_round(self) -> StateTransitionGraph:
-        self.event_log.clear()
         self.initial_deal()
 
         last_player_states = self.play_turns()
