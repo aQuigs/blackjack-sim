@@ -111,8 +111,8 @@ class BlackjackCLI:
     "--num-rounds",
     default=1,
     show_default=True,
-    type=click.IntRange(1, 1000),
-    help="Number of rounds to play (1-1000).",
+    type=click.IntRange(1, 1000000000),
+    help="Number of rounds to play (1-1000000000).",
 )
 @click.option("--no-shuffle-between", is_flag=True, help="Don't shuffle the shoe between rounds.")
 @click.option("--no-print", is_flag=True, help="Disable printing of hands and results.")
