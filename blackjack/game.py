@@ -63,8 +63,11 @@ class Game:
 
         pre_deal_state = PreDealState()
         for player in self.players:
+            logging.info(f"{player.name} initial hand: {player.hand}")
             initial_state = self._make_proper_state(player.hand, is_player=True)
             self.state_transition_graph.add_transition(pre_deal_state, Action.DEAL, initial_state)
+
+        logging.info(f"Dealer's initial hand: {self.dealer.hand}")
 
     def play_player_turn(self, player: Player, strategy: Strategy) -> tuple[bool, ProperState]:
         prev_state = self._make_proper_state(player.hand, is_player=True)
@@ -73,7 +76,6 @@ class Game:
 
             if self.rules.is_bust(player.hand):
                 self._track(BustEvent(player=player.name, hand=player.hand.cards.copy(), value=hand_value.value))
-
                 logging.info(f"{player.name} busts with hand: {player.hand} ({hand_value})")
                 return False, prev_state
 

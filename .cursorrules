@@ -1,9 +1,9 @@
-# CRITICAL: Every rule in this file is mandatory. Do not skip, ignore, or reinterpret any rule. If a rule conflicts or is unclear, stop and ask for clarification.
+# CRITICAL: Every rule in this file is mandatory. Do not skip, ignore, or reinterpret any rule. If a rule conflicts or is unclear, stop and ask for clarification. Seriously.
 
 # Cursor Rules for blackjack-sim
 
 ## AI Enforcement
-- You must treat every rule in this file as a hard constraint.
+- You must treat every rule in this file as a hard constraint unless specified by the user.
 - If you are unsure about a rule, you must ask for clarification before proceeding.
 - If you violate a rule, you must immediately stop, report the violation, and propose a fix.
 
@@ -37,13 +37,15 @@
 
 - You must use descriptive, explicit variable names over short, ambiguous ones
 - You must adhere to existing coding style for consistency
-- You must use empty lines to separate logical sections (preserve existing ones)
+- You must use empty lines to separate logical sections (preserve existing ones). Do this liberally
+- You must not remove existing empty lines unless there are multiple consecutive ones
 - You must replace hardcoded values with named constants
 - You must not use uppercase std types (e.g., use `list` not `List` and `dict` not `Dict`)
 - You must implement robust error handling and logging
 - You must consider edge cases and include assertions to validate assumptions
 - You must always verify information before presenting it
 - You must not add obvious comments that just restate what the code does (e.g., "# Add all dealt cards back to the deck", "# Shuffle all cards")
+- You must not add any comments whatsoever unless they are explaining something non-obvious
 
 ## Testing Philosophy: Testing Without Mocks
 
