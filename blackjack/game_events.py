@@ -12,72 +12,49 @@ class GameEventType(Enum):
     BUST = auto()
     BLACKJACK = auto()
     TWENTY_ONE = auto()
-    NO_ACTIONS = auto()
     CHOOSE_ACTION = auto()
     HIT = auto()
-    INVALID_ACTION = auto()
     ROUND_RESULT = auto()
-
-
-class Winner(Enum):
-    DEALER = auto()
-    PLAYER = auto()
-    PUSH = auto()
-    NONE = auto()
 
 
 @dataclass(frozen=True)
 class DealEvent:
     to: str
-    card: str
+    card: Card
 
 
 @dataclass(frozen=True)
 class BustEvent:
     player: str
-    hand: str
+    hand: list[Card]
     value: int
 
 
 @dataclass(frozen=True)
 class BlackjackEvent:
     player: str
-    hand: str
-    value: int
+    hand: list[Card]
 
 
 @dataclass(frozen=True)
 class TwentyOneEvent:
     player: str
-    hand: str
-
-
-@dataclass(frozen=True)
-class NoActionsEvent:
-    player: str
-    hand: str
+    hand: list[Card]
 
 
 @dataclass(frozen=True)
 class ChooseActionEvent:
     player: str
     action: Action
-    hand: str
+    hand: list[Card]
 
 
 @dataclass(frozen=True)
 class HitEvent:
     player: str
-    card: str
-    new_hand: str
+    card: Card
+    new_hand: list[Card]
     value: int
-
-
-@dataclass(frozen=True)
-class InvalidActionEvent:
-    player: str
-    action: str
-    hand: str
 
 
 @dataclass(frozen=True)
@@ -98,4 +75,3 @@ class RoundResultEvent:
     name: str
     hand: list[Card]
     outcome: Optional[Outcome] = None  # Dealer will have outcome=None
-    winner: Optional[Winner] = None  # Only set for single-player games

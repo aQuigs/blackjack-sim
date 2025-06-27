@@ -14,7 +14,6 @@ from blackjack.game_events import (
     GameEvent,
     GameEventType,
     HitEvent,
-    NoActionsEvent,
     RoundResultEvent,
     TwentyOneEvent,
 )
@@ -45,10 +44,10 @@ class Game:
         self._output_tracker(event)
 
     def _make_proper_state(self, hand, is_player) -> ProperState:
-        hv = self.rules.hand_value(hand)
+        hand_value = self.rules.hand_value(hand)
         return ProperState(
-            player_hand_value=hv.value,
-            player_hand_soft=hv.soft,
+            player_hand_value=hand_value.value,
+            player_hand_soft=hand_value.soft,
             dealer_upcard_rank=self.dealer.hand.cards[0].rank,
             turn=Turn.PLAYER if is_player else Turn.DEALER,
         )
@@ -58,11 +57,11 @@ class Game:
             for player in self.players:
                 card = self.shoe.deal_card()
                 player.hand.add_card(card)
-                self._track(GameEvent(GameEventType.DEAL, DealEvent(to=player.name, card=repr(card))))
+                self._track(GameEvent(GameEventType.DEAL, DealEvent(to=player.name, card=card)))
 
             card = self.shoe.deal_card()
             self.dealer.hand.add_card(card)
-            self._track(GameEvent(GameEventType.DEAL, DealEvent(to=self.dealer.name, card=repr(card))))
+            self._track(GameEvent(GameEventType.DEAL, DealEvent(to=self.dealer.name, card=card)))
 
     def play_player_turn(self, player: Player, strategy: Strategy) -> tuple[bool, ProperState]:
         prev_state = self._make_proper_state(player.hand, is_player=True)
@@ -73,7 +72,7 @@ class Game:
                 self._track(
                     GameEvent(
                         GameEventType.BUST,
-                        BustEvent(player=player.name, hand=repr(player.hand), value=hand_value.value),
+                        BustEvent(player=player.name, hand=player.hand.cards.copy(), value=hand_value.value),
                     )
                 )
 
@@ -84,7 +83,7 @@ class Game:
                 self._track(
                     GameEvent(
                         GameEventType.BLACKJACK,
-                        BlackjackEvent(player=player.name, hand=repr(player.hand), value=hand_value.value),
+                        BlackjackEvent(player=player.name, hand=player.hand.cards.copy()),
                     )
                 )
                 logging.info(f"{player.name} has blackjack with hand: {player.hand} ({hand_value})")
@@ -92,16 +91,18 @@ class Game:
 
             if hand_value.value == 21:
                 self._track(
-                    GameEvent(GameEventType.TWENTY_ONE, TwentyOneEvent(player=player.name, hand=repr(player.hand)))
+                    GameEvent(
+                        GameEventType.TWENTY_ONE, TwentyOneEvent(player=player.name, hand=player.hand.cards.copy())
+                    )
                 )
                 return True, prev_state
 
             actions = self.rules.available_actions(player.hand, {})
             if not actions:
-                self._track(
-                    GameEvent(GameEventType.NO_ACTIONS, NoActionsEvent(player=player.name, hand=repr(player.hand)))
+                raise RuntimeError(
+                    f"No valid actions available for {player.name} with hand {player.hand.cards}. "
+                    f"Available actions: {actions}"
                 )
-                return False, prev_state
 
             stand, next_state = self.do_player_action(player, strategy, prev_state, actions)
             prev_state = next_state
@@ -116,11 +117,7 @@ class Game:
         self._track(
             GameEvent(
                 GameEventType.CHOOSE_ACTION,
-                ChooseActionEvent(
-                    player=player.name,
-                    action=action,
-                    hand=repr(player.hand),
-                ),
+                ChooseActionEvent(player=player.name, action=action, hand=player.hand.cards.copy()),
             )
         )
         logging.info(f"{player.name} chooses {action.name} with hand: {player.hand} ({hand_value})")
@@ -132,7 +129,7 @@ class Game:
         elif action == Action.HIT:
             card = self.shoe.deal_card()
             player.hand.add_card(card)
-            hv_new = self.rules.hand_value(player.hand)
+            new_hand_value = self.rules.hand_value(player.hand)
             next_state = self._make_proper_state(player.hand, is_player=True)
             self.state_transition_graph.add_transition(prev_state, action, next_state)
             self._track(
@@ -140,13 +137,13 @@ class Game:
                     GameEventType.HIT,
                     HitEvent(
                         player=player.name,
-                        card=repr(card),
-                        new_hand=repr(player.hand),
-                        value=hv_new.value,
+                        card=card,
+                        new_hand=player.hand.cards.copy(),
+                        value=new_hand_value.value,
                     ),
                 )
             )
-            logging.info(f"{player.name} receives: {card}. " f"New hand: {player.hand} ({hv_new})")
+            logging.info(f"{player.name} receives: {card}. New hand: {player.hand} ({new_hand_value})")
             return False, next_state
         else:
             raise RuntimeError(
@@ -162,7 +159,7 @@ class Game:
                         GameEventType.BUST,
                         BustEvent(
                             player=dealer.name,
-                            hand=repr(dealer.hand),
+                            hand=dealer.hand.cards.copy(),
                             value=self.rules.hand_value(dealer.hand).value,
                         ),
                     )
@@ -181,11 +178,7 @@ class Game:
             self._track(
                 GameEvent(
                     GameEventType.CHOOSE_ACTION,
-                    ChooseActionEvent(
-                        player=dealer.name,
-                        action=action,
-                        hand=repr(dealer.hand),
-                    ),
+                    ChooseActionEvent(player=dealer.name, action=action, hand=dealer.hand.cards.copy()),
                 )
             )
             if action == Action.STAND:
@@ -198,16 +191,16 @@ class Game:
                         GameEventType.HIT,
                         HitEvent(
                             player=dealer.name,
-                            card=repr(card),
-                            new_hand=repr(dealer.hand),
+                            card=card,
+                            new_hand=dealer.hand.cards.copy(),
                             value=self.rules.hand_value(dealer.hand).value,
                         ),
                     )
                 )
                 logging.info(
-                    f"{dealer.name} receives: {card}. "
-                    f"New hand: {dealer.hand} ({self.rules.hand_value(dealer.hand)})"
+                    f"{dealer.name} receives: {card}. New hand: {dealer.hand} ({self.rules.hand_value(dealer.hand)})"
                 )
+                continue
             else:
                 raise RuntimeError(
                     f"Invalid action {action} for dealer with hand {dealer.hand.cards}. "
