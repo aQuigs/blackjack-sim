@@ -55,9 +55,6 @@ class Game:
             turn=Turn.PLAYER if is_player else Turn.DEALER,
         )
 
-    def get_state_transition_graph(self) -> StateTransitionGraph:
-        return self.state_transition_graph
-
     def initial_deal(self) -> None:
         for _ in range(2):
             for player in self.players:
