@@ -1,3 +1,4 @@
+import concurrent.futures
 import logging
 from typing import Optional
 
@@ -10,6 +11,14 @@ from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.game import Game
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.strategy import RandomStrategy, StandardDealerStrategy
+
+
+def print_state_transition_graph(graph: StateTransitionGraph) -> None:
+    for state, actions in graph.get_graph().items():
+        print(f"  {state}:")
+        for action, next_states in actions.items():
+            for next_state, count in next_states.items():
+                print(f"    --{action.name}--> {next_state} [count={count}]")
 
 
 class BlackjackCLI:
@@ -66,7 +75,8 @@ class BlackjackCLI:
     def run(
         self, num_players: int, num_rounds: int = 1, shuffle_between_rounds: bool = True, printable: bool = True
     ) -> StateTransitionGraph:
-        logging.basicConfig(level=logging.INFO, format="%(message)s")
+        logging.basicConfig(level=logging.ERROR, format="%(message)s")
+
         graph = StateTransitionGraph()
 
         for round_num in range(1, num_rounds + 1):
@@ -74,6 +84,7 @@ class BlackjackCLI:
                 print(f"\n=== Round {round_num} ===")
 
             player_strategies = [self.player_strategy for _ in range(num_players)]
+
             game = Game(
                 player_strategies,
                 self.shoe,
@@ -82,15 +93,11 @@ class BlackjackCLI:
                 output_tracker=self.output_tracker,
                 state_transition_graph=graph,
             )
+
             game.play_round()
 
             if printable:
-                print("\nState Transition Graph:")
-                for state, actions in graph.get_graph().items():
-                    print(f"  {state}:")
-                    for action, next_states in actions.items():
-                        for next_state, count in next_states.items():
-                            print(f"    --{action.name}--> {next_state} [count={count}]")
+                print_state_transition_graph(graph)
 
             if shuffle_between_rounds and round_num < num_rounds:
                 self.shoe.shuffle()
@@ -102,6 +109,51 @@ class BlackjackCLI:
             print(f"Total rounds played: {num_rounds}")
 
         return graph
+
+
+def run_batch(
+    num_decks: int,
+    num_players: int,
+    num_rounds: int,
+    shuffle_between_rounds: bool,
+) -> StateTransitionGraph:
+    cli = BlackjackCLI(num_decks=num_decks)
+
+    return cli.run(
+        num_players=num_players,
+        num_rounds=num_rounds,
+        shuffle_between_rounds=shuffle_between_rounds,
+        printable=False,
+    )
+
+
+def run_parallel_batches(
+    num_decks: int,
+    num_players: int,
+    num_rounds: int,
+    no_shuffle_between: bool,
+    no_print: bool,
+    parallel: int,
+) -> StateTransitionGraph:
+    if parallel == 1 or num_rounds == 1:
+        return run_batch(num_decks, num_players, num_rounds, not no_shuffle_between)
+
+    base_batch = num_rounds // parallel
+    remainder = num_rounds % parallel
+    batch_sizes = [base_batch + (1 if i < remainder else 0) for i in range(parallel)]
+
+    args_list = [
+        (num_decks, num_players, batch_size, not no_shuffle_between)
+        for batch_size in batch_sizes
+    ]
+
+    with concurrent.futures.ProcessPoolExecutor(max_workers=parallel) as executor:
+        graphs = list(executor.map(lambda args: run_batch(*args), args_list))
+
+    main_graph = graphs[0]
+    for g in graphs[1:]:
+        main_graph.merge(g)
+    return main_graph
 
 
 @click.command()
@@ -116,13 +168,28 @@ class BlackjackCLI:
 )
 @click.option("--no-shuffle-between", is_flag=True, help="Don't shuffle the shoe between rounds.")
 @click.option("--no-print", is_flag=True, help="Disable printing of hands and results.")
-def main(num_players, num_decks, num_rounds, no_shuffle_between, no_print):
+@click.option(
+    "--parallel",
+    default=1,
+    show_default=True,
+    type=click.IntRange(1, 128),
+    help="Number of parallel batches to run.",
+)
+def main(num_players, num_decks, num_rounds, no_shuffle_between, no_print, parallel):
     """Run a blackjack simulation from the command line."""
     try:
-        cli = BlackjackCLI(num_decks=num_decks)
-        cli.run(
-            num_players, num_rounds=num_rounds, shuffle_between_rounds=not no_shuffle_between, printable=not no_print
+        main_graph = run_parallel_batches(
+            num_decks=num_decks,
+            num_players=num_players,
+            num_rounds=num_rounds,
+            no_shuffle_between=no_shuffle_between,
+            no_print=no_print,
+            parallel=parallel,
         )
+
+        if not no_print:
+            print_state_transition_graph(main_graph)
+
     except Exception as exc:
         logging.error(f"Error running blackjack simulation: {exc}")
         raise SystemExit(1)

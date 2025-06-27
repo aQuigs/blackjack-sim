@@ -222,3 +222,25 @@ def test_normal_win_and_loss():
     assert hands["Player 1"] == [Card("10", "♠"), Card("9", "♠")]
     assert hands["Player 2"] == [Card("8", "♠"), Card("7", "♠")]
     assert hands["Dealer"] == [Card("10", "♣"), Card("8", "♣")]
+
+
+def test_state_transition_graph_merge():
+    from blackjack.action import Action
+    from blackjack.entities.state import PreDealState, ProperState
+    from blackjack.entities.state_transition_graph import StateTransitionGraph
+
+    g1 = StateTransitionGraph()
+    g2 = StateTransitionGraph()
+    s1 = PreDealState()
+    s2 = ProperState(10, False, "A", 0)
+    s3 = ProperState(12, True, "K", 1)
+    g1.add_transition(s1, Action.HIT, s2)
+    g1.add_transition(s2, Action.STAND, s3)
+    g2.add_transition(s1, Action.HIT, s2)
+    g2.add_transition(s2, Action.STAND, s3)
+    g2.add_transition(s2, Action.HIT, s3)
+    g1.merge(g2)
+    graph = g1.get_graph()
+    assert graph[s1][Action.HIT][s2] == 2
+    assert graph[s2][Action.STAND][s3] == 2
+    assert graph[s2][Action.HIT][s3] == 1
