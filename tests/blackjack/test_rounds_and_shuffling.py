@@ -1,6 +1,10 @@
 from blackjack.action import Action
 from blackjack.cli import BlackjackCLI
 from blackjack.entities.card import Card
+from blackjack.entities.state_transition_graph import StateTransitionGraph
+from blackjack.game import Game
+from blackjack.rules.standard import StandardBlackjackRules
+from blackjack.strategy.strategy import StandardDealerStrategy
 from tests.blackjack.conftest import parse_final_hands_and_outcomes
 
 # Fixed shoe: alternating player and dealer cards for deterministic results
@@ -43,3 +47,37 @@ def test_multiple_rounds_without_shuffling():
         hands, outcomes = parse_final_hands_and_outcomes(event_log)
         if hands:
             assert ("Player 1" in hands) or ("Dealer" in hands)
+
+
+def test_face_cards_shown_as_tens_in_graph(stacked_shoe, always_stand_strategy):
+    cards = [
+        ("7", "♠"),  # Extra card for player or dealer
+        ("6", "♠"),  # Extra card for player or dealer
+        ("4", "♠"),  # Extra card for player or dealer
+        ("5", "♥"),  # Dealer hole card
+        ("3", "♥"),  # Player 1 second card
+        ("J", "♥"),  # Dealer upcard (face card)
+        ("2", "♥"),  # Player 1 first card
+    ]
+
+    shoe = stacked_shoe(cards)
+    rules = StandardBlackjackRules()
+    dealer_strategy = StandardDealerStrategy()
+    state_graph = StateTransitionGraph()
+
+    game = Game(
+        player_strategies=[always_stand_strategy],
+        shoe=shoe,
+        rules=rules,
+        dealer_strategy=dealer_strategy,
+        state_transition_graph=state_graph,
+    )
+
+    game.play_round()
+
+    found = False
+    for state, _actions in state_graph.transitions.items():
+        if hasattr(state, "dealer_upcard_rank") and state.dealer_upcard_rank == "10":
+            found = True
+            break
+    assert found

@@ -2,6 +2,7 @@ import logging
 from typing import Callable, Optional
 
 from blackjack.action import Action
+from blackjack.entities.hand import Hand
 from blackjack.entities.player import Player
 from blackjack.entities.shoe import Shoe
 from blackjack.entities.state import PreDealState, ProperState, TerminalState, Turn
@@ -41,12 +42,12 @@ class Game:
     def _track(self, event: GameEvent) -> None:
         self.output_tracker(event)
 
-    def _make_proper_state(self, hand, is_player) -> ProperState:
+    def _make_proper_state(self, hand: Hand, is_player: bool) -> ProperState:
         hand_value = self.rules.hand_value(hand)
         return ProperState(
             player_hand_value=hand_value.value,
             player_hand_soft=hand_value.soft,
-            dealer_upcard_rank=self.dealer.hand.cards[0].rank,
+            dealer_upcard_rank=self.rules.translate_upcard(self.dealer.hand.cards[0]),
             turn=Turn.PLAYER if is_player else Turn.DEALER,
         )
 

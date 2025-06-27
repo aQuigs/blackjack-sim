@@ -1,7 +1,10 @@
 from blackjack.action import Action
+from blackjack.entities.card import Card
 from blackjack.entities.hand import Hand
 from blackjack.entities.state import Outcome
 from blackjack.rules.base import HandValue, Rules
+
+TEN_RANKS: set[str] = {"10", "J", "Q", "K"}
 
 
 class StandardBlackjackRules(Rules):
@@ -9,7 +12,7 @@ class StandardBlackjackRules(Rules):
         value: int = 0
         aces: int = 0
         for card in hand.cards:
-            if card.rank in {"J", "Q", "K"}:
+            if card.rank in TEN_RANKS:
                 value += 10
             elif card.rank == "A":
                 aces += 1
@@ -60,3 +63,6 @@ class StandardBlackjackRules(Rules):
             return Outcome.LOSE
         else:
             return Outcome.PUSH
+
+    def translate_upcard(self, upcard: Card) -> str:
+        return "10" if upcard.rank in TEN_RANKS else upcard.rank

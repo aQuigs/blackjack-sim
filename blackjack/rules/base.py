@@ -1,4 +1,5 @@
 from blackjack.action import Action
+from blackjack.entities.card import Card
 from blackjack.entities.hand import Hand
 
 
@@ -37,4 +38,7 @@ class Rules:
         raise NotImplementedError
 
     def determine_outcome(self, player_hand: Hand, dealer_hand: Hand):
+        raise NotImplementedError
+
+    def translate_upcard(self, upcard: Card):
         raise NotImplementedError
