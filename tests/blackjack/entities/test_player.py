@@ -1,6 +1,7 @@
 from blackjack.cli import BlackjackCLI
 from blackjack.entities.card import Card
 from blackjack.entities.state import Outcome
+from blackjack.game_events import GameEventType
 from blackjack.strategy.base import Strategy
 from blackjack.strategy.strategy import StandardDealerStrategy
 from tests.blackjack.conftest import parse_final_hands_and_outcomes
@@ -50,14 +51,10 @@ def test_game_all_players_bust():
     assert hands["Player 2"] == [Card("10", "♥"), Card("2", "♦"), Card("8", "♠"), Card("5", "♦")]
     assert hands["Dealer"] == [Card("6", "♣"), Card("7", "♥")]
     player1_actions = [
-        e.payload.action.name
-        for e in event_log
-        if getattr(e.payload, "player", None) == "Player 1" and hasattr(e.payload, "action")
+        e.action.name for e in event_log if getattr(e, "player", None) == "Player 1" and hasattr(e, "action")
     ]
     player2_actions = [
-        e.payload.action.name
-        for e in event_log
-        if getattr(e.payload, "player", None) == "Player 2" and hasattr(e.payload, "action")
+        e.action.name for e in event_log if getattr(e, "player", None) == "Player 2" and hasattr(e, "action")
     ]
     assert player1_actions == ["HIT", "HIT"]
     assert player2_actions == ["HIT", "HIT"]
@@ -91,10 +88,10 @@ def test_game_all_players_blackjack():
     assert hands["Player 2"] == [Card("A", "♥"), Card("K", "♥")]
     assert hands["Dealer"] == [Card("9", "♣"), Card("8", "♣")]
     player1_events = [
-        e for e in event_log if getattr(e.payload, "player", None) == "Player 1" and e.type.name == "BLACKJACK"
+        e for e in event_log if getattr(e, "player", None) == "Player 1" and e.event_type == GameEventType.BLACKJACK
     ]
     player2_events = [
-        e for e in event_log if getattr(e.payload, "player", None) == "Player 2" and e.type.name == "BLACKJACK"
+        e for e in event_log if getattr(e, "player", None) == "Player 2" and e.event_type == GameEventType.BLACKJACK
     ]
     assert player1_events
     assert player2_events
@@ -125,13 +122,11 @@ def test_player_wins_when_dealer_busts():
     assert hands["Player 1"] == [Card("10", "♠"), Card("Q", "♠")]
     assert hands["Dealer"] == [Card("9", "♠"), Card("5", "♣"), Card("2", "♦"), Card("8", "♣")]
     dealer_actions = [
-        e.payload.action.name
-        for e in event_log
-        if getattr(e.payload, "player", None) == "Dealer" and hasattr(e.payload, "action")
+        e.action.name for e in event_log if getattr(e, "player", None) == "Dealer" and hasattr(e, "action")
     ]
     assert dealer_actions == ["HIT", "HIT"]
     dealer_bust_events = [
-        e for e in event_log if getattr(e.payload, "player", None) == "Dealer" and e.type.name == "BUST"
+        e for e in event_log if getattr(e, "player", None) == "Dealer" and e.event_type == GameEventType.BUST
     ]
     assert dealer_bust_events
 
@@ -158,9 +153,9 @@ def test_game_push():
     assert outcomes["Player 1"] == Outcome.PUSH
     assert hands["Player 1"] == [Card("10", "♠"), Card("Q", "♠")]
     assert hands["Dealer"] == [Card("10", "♣"), Card("Q", "♣")]
-    player_events = [e for e in event_log if getattr(e.payload, "player", None) == "Player 1"]
-    assert not any(e.type.name == "BUST" for e in player_events)
-    assert not any(e.type.name == "BLACKJACK" for e in player_events)
+    player_events = [e for e in event_log if getattr(e, "player", None) == "Player 1"]
+    assert not any(e.event_type == GameEventType.BUST for e in player_events)
+    assert not any(e.event_type == GameEventType.BLACKJACK for e in player_events)
 
 
 def test_state_transition_graph_simple_game():

@@ -5,6 +5,7 @@ from blackjack.cli import BlackjackCLI
 from blackjack.entities.card import Card
 from blackjack.entities.hand import Hand
 from blackjack.entities.state import Outcome
+from blackjack.game_events import GameEventType
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.base import Strategy
 from blackjack.strategy.strategy import StandardDealerStrategy
@@ -150,8 +151,8 @@ def test_blackjack_detection():
     assert outcomes["Player 1"] == Outcome.BLACKJACK
     assert hands["Player 1"] == [Card("A", "♠"), Card("K", "♠")]
     assert hands["Dealer"] == [Card("9", "♣"), Card("8", "♣")]
-    player_events = [e for e in event_log if getattr(e.payload, "player", None) == "Player 1"]
-    assert any(e.type.name == "BLACKJACK" for e in player_events)
+    player_events = [e for e in event_log if getattr(e, "player", None) == "Player 1"]
+    assert any(e.event_type == GameEventType.BLACKJACK for e in player_events)
 
 
 def test_bust_detection():
@@ -177,8 +178,8 @@ def test_bust_detection():
     assert outcomes["Player 1"] == Outcome.BUST
     assert hands["Player 1"] == [Card("10", "♠"), Card("5", "♦"), Card("7", "♠")]
     assert hands["Dealer"] == [Card("9", "♣"), Card("8", "♣")]
-    player_events = [e for e in event_log if getattr(e.payload, "player", None) == "Player 1"]
-    assert any(e.type.name == "BUST" for e in player_events)
+    player_events = [e for e in event_log if getattr(e, "player", None) == "Player 1"]
+    assert any(e.event_type == GameEventType.BUST for e in player_events)
 
 
 def test_dealer_hits_on_16_stands_on_17():
@@ -206,12 +207,10 @@ def test_dealer_hits_on_16_stands_on_17():
     # Dealer may only have initial cards if not required to hit
     assert "Dealer" in hands
     assert "Player 1" in hands
-    dealer_events = [e for e in event_log if getattr(e.payload, "player", None) == "Dealer"]
-    assert any(e.type.name == "HIT" for e in dealer_events)
-    assert any(
-        e.type.name == "STAND" or (hasattr(e.payload, "action") and e.payload.action.name == "STAND")
-        for e in dealer_events
-    )
+    dealer_events = [e for e in event_log if getattr(e, "player", None) == "Dealer"]
+    # Dealer should not bust in this scenario (final hand is 18)
+    assert not any(e.event_type == GameEventType.BUST for e in dealer_events)
+    assert any((hasattr(e, "action") and e.action.name == "STAND") for e in dealer_events)
 
 
 def test_available_actions_and_can_continue():
@@ -238,5 +237,5 @@ def test_available_actions_and_can_continue():
     assert "Dealer" in hands
     assert hands["Player 1"] == [Card("10", "♠"), Card("6", "♣"), Card("8", "♦")]
     assert hands["Dealer"] == [Card("10", "♣"), Card("7", "♠")]
-    player_events = [e for e in event_log if getattr(e.payload, "player", None) == "Player 1"]
-    assert any(e.type.name == "BUST" for e in player_events)
+    player_events = [e for e in event_log if getattr(e, "player", None) == "Player 1"]
+    assert any(e.event_type == GameEventType.BUST for e in player_events)

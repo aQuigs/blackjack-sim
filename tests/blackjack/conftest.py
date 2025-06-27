@@ -62,9 +62,8 @@ def parse_final_hands_and_outcomes(event_log):
     hands = {}
     outcomes = {}
     for e in event_log:
-        if e.type == GameEventType.ROUND_RESULT:
-            hands[e.payload.name] = e.payload.hand
-            if e.payload.outcome is not None:
-                outcomes[e.payload.name] = e.payload.outcome
-
+        if e.event_type == GameEventType.ROUND_RESULT:
+            hands[e.name] = e.hand
+            if e.outcome is not None:
+                outcomes[e.name] = e.outcome
     return hands, outcomes

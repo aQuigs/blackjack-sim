@@ -12,7 +12,6 @@ from blackjack.game_events import (
     ChooseActionEvent,
     DealEvent,
     GameEvent,
-    GameEventType,
     HitEvent,
     RoundResultEvent,
     TwentyOneEvent,
@@ -56,11 +55,11 @@ class Game:
             for player in self.players:
                 card = self.shoe.deal_card()
                 player.hand.add_card(card)
-                self._track(GameEvent(GameEventType.DEAL, DealEvent(to=player.name, card=card)))
+                self._track(DealEvent(to=player.name, card=card))
 
             card = self.shoe.deal_card()
             self.dealer.hand.add_card(card)
-            self._track(GameEvent(GameEventType.DEAL, DealEvent(to=self.dealer.name, card=card)))
+            self._track(DealEvent(to=self.dealer.name, card=card))
 
         pre_deal_state = PreDealState()
         for player in self.players:
@@ -73,32 +72,18 @@ class Game:
             hand_value = self.rules.hand_value(player.hand)
 
             if self.rules.is_bust(player.hand):
-                self._track(
-                    GameEvent(
-                        GameEventType.BUST,
-                        BustEvent(player=player.name, hand=player.hand.cards.copy(), value=hand_value.value),
-                    )
-                )
+                self._track(BustEvent(player=player.name, hand=player.hand.cards.copy(), value=hand_value.value))
 
                 logging.info(f"{player.name} busts with hand: {player.hand} ({hand_value})")
                 return False, prev_state
 
             if self.rules.is_blackjack(player.hand):
-                self._track(
-                    GameEvent(
-                        GameEventType.BLACKJACK,
-                        BlackjackEvent(player=player.name, hand=player.hand.cards.copy()),
-                    )
-                )
+                self._track(BlackjackEvent(player=player.name, hand=player.hand.cards.copy()))
                 logging.info(f"{player.name} has blackjack with hand: {player.hand} ({hand_value})")
                 return False, prev_state
 
             if hand_value.value == 21:
-                self._track(
-                    GameEvent(
-                        GameEventType.TWENTY_ONE, TwentyOneEvent(player=player.name, hand=player.hand.cards.copy())
-                    )
-                )
+                self._track(TwentyOneEvent(player=player.name, hand=player.hand.cards.copy()))
                 return True, prev_state
 
             actions = self.rules.available_actions(player.hand, {})
@@ -118,12 +103,7 @@ class Game:
     ) -> tuple[bool, ProperState]:
         hand_value = self.rules.hand_value(player.hand)
         action = strategy.choose_action(player.hand, actions, {})
-        self._track(
-            GameEvent(
-                GameEventType.CHOOSE_ACTION,
-                ChooseActionEvent(player=player.name, action=action, hand=player.hand.cards.copy()),
-            )
-        )
+        self._track(ChooseActionEvent(player=player.name, action=action, hand=player.hand.cards.copy()))
         logging.info(f"{player.name} chooses {action.name} with hand: {player.hand} ({hand_value})")
 
         if action == Action.STAND:
@@ -137,14 +117,11 @@ class Game:
             next_state = self._make_proper_state(player.hand, is_player=True)
             self.state_transition_graph.add_transition(prev_state, action, next_state)
             self._track(
-                GameEvent(
-                    GameEventType.HIT,
-                    HitEvent(
-                        player=player.name,
-                        card=card,
-                        new_hand=player.hand.cards.copy(),
-                        value=new_hand_value.value,
-                    ),
+                HitEvent(
+                    player=player.name,
+                    card=card,
+                    new_hand=player.hand.cards.copy(),
+                    value=new_hand_value.value,
                 )
             )
             logging.info(f"{player.name} receives: {card}. New hand: {player.hand} ({new_hand_value})")
@@ -159,13 +136,10 @@ class Game:
         while True:
             if self.rules.is_bust(dealer.hand):
                 self._track(
-                    GameEvent(
-                        GameEventType.BUST,
-                        BustEvent(
-                            player=dealer.name,
-                            hand=dealer.hand.cards.copy(),
-                            value=self.rules.hand_value(dealer.hand).value,
-                        ),
+                    BustEvent(
+                        player=dealer.name,
+                        hand=dealer.hand.cards.copy(),
+                        value=self.rules.hand_value(dealer.hand).value,
                     )
                 )
                 logging.info(f"{dealer.name} busts with hand: {dealer.hand} ({self.rules.hand_value(dealer.hand)})")
@@ -179,26 +153,18 @@ class Game:
                 )
 
             action = strategy.choose_action(dealer.hand, actions, {})
-            self._track(
-                GameEvent(
-                    GameEventType.CHOOSE_ACTION,
-                    ChooseActionEvent(player=dealer.name, action=action, hand=dealer.hand.cards.copy()),
-                )
-            )
+            self._track(ChooseActionEvent(player=dealer.name, action=action, hand=dealer.hand.cards.copy()))
             if action == Action.STAND:
                 return
             elif action == Action.HIT:
                 card = self.shoe.deal_card()
                 dealer.hand.add_card(card)
                 self._track(
-                    GameEvent(
-                        GameEventType.HIT,
-                        HitEvent(
-                            player=dealer.name,
-                            card=card,
-                            new_hand=dealer.hand.cards.copy(),
-                            value=self.rules.hand_value(dealer.hand).value,
-                        ),
+                    HitEvent(
+                        player=dealer.name,
+                        card=card,
+                        new_hand=dealer.hand.cards.copy(),
+                        value=self.rules.hand_value(dealer.hand).value,
                     )
                 )
                 logging.info(
@@ -241,22 +207,15 @@ class Game:
                 self.state_transition_graph.add_transition(last_state, Action.GAME_END, TerminalState(final_outcome))
 
             self._track(
-                GameEvent(
-                    GameEventType.ROUND_RESULT,
-                    RoundResultEvent(
-                        name=player.name,
-                        hand=hand,
-                        outcome=outcome,
-                    ),
+                RoundResultEvent(
+                    name=player.name,
+                    hand=hand,
+                    outcome=outcome,
                 )
             )
 
         # Emit ROUND_RESULT for dealer (no outcome)
         dealer_hand = list(self.dealer.hand.cards)
-        self._track(
-            GameEvent(
-                GameEventType.ROUND_RESULT, RoundResultEvent(name=self.dealer.name, hand=dealer_hand, outcome=None)
-            )
-        )
+        self._track(RoundResultEvent(name=self.dealer.name, hand=dealer_hand, outcome=None))
 
         return self.state_transition_graph

@@ -3,6 +3,7 @@ import pytest
 from blackjack.cli import BlackjackCLI
 from blackjack.entities.card import Card
 from blackjack.entities.state import Outcome
+from blackjack.game_events import GameEventType
 from blackjack.strategy.base import Strategy
 from tests.blackjack.conftest import parse_final_hands_and_outcomes
 
@@ -122,11 +123,16 @@ def test_event_log_consistency_simple_game():
     )
     cli.run(num_players=1, printable=False)
     # Check event types in order
-    event_types = [e.type.name for e in event_log]
-    assert event_types[:4] == ["DEAL", "DEAL", "DEAL", "DEAL"]  # Initial deal
-    assert "CHOOSE_ACTION" in event_types
-    assert "HIT" in event_types
-    assert any(e.type.name == "BUST" or e.type.name == "BLACKJACK" or e.type.name == "TWENTY_ONE" for e in event_log)
+    event_types = [e.event_type for e in event_log]
+    assert event_types[:4] == [GameEventType.DEAL] * 4
+    assert GameEventType.CHOOSE_ACTION in event_types
+    assert GameEventType.HIT in event_types
+    assert any(
+        e.event_type == GameEventType.BUST
+        or e.event_type == GameEventType.BLACKJACK
+        or e.event_type == GameEventType.TWENTY_ONE
+        for e in event_log
+    )
 
 
 def test_invalid_action_raises_runtime_error():

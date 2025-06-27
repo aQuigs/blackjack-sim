@@ -45,6 +45,7 @@ class ProperState(GameState):
     def __eq__(self, other):
         if not isinstance(other, ProperState):
             return NotImplemented
+
         return (
             self.player_hand_value == other.player_hand_value
             and self.player_hand_soft == other.player_hand_soft
