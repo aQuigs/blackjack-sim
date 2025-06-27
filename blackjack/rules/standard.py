@@ -35,6 +35,7 @@ class StandardBlackjackRules(Rules):
     def available_actions(self, hand: Hand, game_state: dict[str, object]) -> list[Action]:
         if self.is_bust(hand):
             return []
+
         return [Action.HIT, Action.STAND]
 
     def can_continue(self, hand: Hand, game_state: dict[str, object]) -> bool:

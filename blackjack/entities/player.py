@@ -4,9 +4,6 @@ from blackjack.strategy.base import Strategy
 
 class Player:
     def __init__(self, name: str, strategy: Strategy) -> None:
-        if strategy is None:
-            raise ValueError("Strategy cannot be None")
-
         self.name: str = name
         self.hand: Hand = Hand()
         self.strategy: Strategy = strategy

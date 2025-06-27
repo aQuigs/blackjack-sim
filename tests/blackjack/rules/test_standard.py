@@ -1,3 +1,5 @@
+import pytest
+
 from blackjack.action import Action
 from blackjack.cli import BlackjackCLI
 from blackjack.entities.card import Card
@@ -5,7 +7,7 @@ from blackjack.entities.hand import Hand
 from blackjack.game_events import PlayerOutcome, Winner
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.base import Strategy
-from blackjack.strategy.random import StandardDealerStrategy
+from blackjack.strategy.strategy import StandardDealerStrategy
 
 
 def make_hand(cards):
@@ -97,7 +99,6 @@ def test_rules_base_not_implemented():
     from blackjack.entities.hand import Hand
 
     hand = Hand()
-    import pytest
 
     with pytest.raises(NotImplementedError):
         rules.hand_value(hand)

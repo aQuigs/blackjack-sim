@@ -27,6 +27,7 @@
 - Implement robust error handling and logging
 - Consider edge cases and include assertions to validate assumptions
 - Always verify information before presenting it
+- Don't add obvious comments that just restate what the code does (e.g., "# Add all dealt cards back to the deck", "# Shuffle all cards")
 
 ## Testing Philosophy: Testing Without Mocks
 

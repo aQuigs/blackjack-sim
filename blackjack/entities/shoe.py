@@ -10,6 +10,7 @@ class Shoe:
         self, deck_schema: DeckSchema, num_decks: int = 1, random_wrapper: Optional[RandomWrapper] = None
     ) -> None:
         self.cards: list[Card] = []
+        self.dealt_cards: list[Card] = []
         self.randomizer = random_wrapper or RandomWrapper()
 
         card_counts = deck_schema.card_counts()
@@ -25,13 +26,17 @@ class Shoe:
         return cls(deck_schema, num_decks, random_wrapper=RandomWrapper(null=True, shuffle_response=cards))
 
     def shuffle(self) -> None:
+        self.cards.extend(self.dealt_cards)
+        self.dealt_cards.clear()
         self.randomizer.shuffle(self.cards)
 
     def deal_card(self) -> Card:
         if not self.cards:
             raise ValueError("No more cards in the shoe.")
 
-        return self.cards.pop()
+        card = self.cards.pop()
+        self.dealt_cards.append(card)
+        return card
 
     def cards_left(self) -> int:
         return len(self.cards)

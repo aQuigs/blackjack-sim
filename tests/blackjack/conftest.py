@@ -5,7 +5,7 @@ from blackjack.entities.deck_schema import StandardBlackjackSchema
 from blackjack.entities.shoe import Shoe
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.base import Strategy
-from blackjack.strategy.random import StandardDealerStrategy
+from blackjack.strategy.strategy import StandardDealerStrategy
 
 
 class AlwaysStandStrategy(Strategy):

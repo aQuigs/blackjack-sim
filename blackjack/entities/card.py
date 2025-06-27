@@ -5,8 +5,10 @@ class Card:
     def __init__(self, rank: str, suit: str) -> None:
         if rank not in Card.RANKS:
             raise ValueError(f"Invalid rank: {rank}")
+
         if suit not in Card.SUITS:
             raise ValueError(f"Invalid suit: {suit}")
+
         self.rank: str = rank
         self.suit: str = suit
 
@@ -19,6 +21,7 @@ class Card:
     def __eq__(self, other):
         if not isinstance(other, Card):
             return NotImplemented
+
         return self.rank == other.rank and self.suit == other.suit
 
     def __hash__(self):

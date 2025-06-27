@@ -2,7 +2,7 @@ from blackjack.cli import BlackjackCLI
 from blackjack.entities.card import Card
 from blackjack.game_events import PlayerOutcome, Winner
 from blackjack.strategy.base import Strategy
-from blackjack.strategy.random import StandardDealerStrategy
+from blackjack.strategy.strategy import StandardDealerStrategy
 
 
 class AlwaysHitStrategy(Strategy):
