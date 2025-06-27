@@ -74,6 +74,7 @@ def test_blackjack_and_bust_are_reported():
     )
 
     result = cli.run(num_players=1, printable=False)
+    result = result[0]
     assert result.player_results[0].outcome == PlayerOutcome.BLACKJACK
     assert result.winner == Winner.PLAYER
 
@@ -100,6 +101,7 @@ def test_blackjack_and_bust_are_reported():
     )
 
     result = cli.run(num_players=1, printable=False)
+    result = result[0]
     assert result.player_results[0].outcome == PlayerOutcome.BUST
 
     bust_events = [e for e in event_log if e.type.name == "BUST"]

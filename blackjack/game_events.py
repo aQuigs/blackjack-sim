@@ -93,14 +93,6 @@ class PlayerResult:
 
 
 @dataclass(frozen=True)
-class GameResult:
-    player_results: list[PlayerResult]
-    dealer_hand: list[Card]
-    winner: Optional[Winner]
-    state_transition_graph: StateTransitionGraph
-
-
-@dataclass(frozen=True)
 class GameEvent:
     type: GameEventType
     payload: Any

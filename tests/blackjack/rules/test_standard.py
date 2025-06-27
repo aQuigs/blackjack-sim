@@ -144,7 +144,7 @@ def test_blackjack_detection():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=1, printable=False)
+    result = cli.run(num_players=1, printable=False)[0]
     assert result.player_results[0].outcome == PlayerOutcome.BLACKJACK
     assert result.winner == Winner.PLAYER
     assert result.player_results[0].hand == [Card("A", "♠"), Card("K", "♠")]
@@ -171,7 +171,7 @@ def test_bust_detection():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=1, printable=False)
+    result = cli.run(num_players=1, printable=False)[0]
     assert result.player_results[0].outcome == PlayerOutcome.BUST
     assert result.winner == Winner.DEALER
     assert result.player_results[0].hand == [Card("10", "♠"), Card("5", "♦"), Card("7", "♠")]
@@ -200,7 +200,7 @@ def test_dealer_hits_on_16_stands_on_17():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=1, printable=False)
+    result = cli.run(num_players=1, printable=False)[0]
     assert result.winner == Winner.DEALER
     assert result.player_results[0].hand == [Card("10", "♠"), Card("6", "♣")]
     assert result.dealer_hand == [Card("10", "♣"), Card("2", "♠"), Card("3", "♦"), Card("4", "♥")]
@@ -230,7 +230,7 @@ def test_available_actions_and_can_continue():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=1, printable=False)
+    result = cli.run(num_players=1, printable=False)[0]
     assert result.player_results[0].outcome == PlayerOutcome.BUST
     assert result.player_results[0].hand == [Card("10", "♠"), Card("6", "♣"), Card("8", "♦")]
     assert result.dealer_hand == [Card("10", "♣"), Card("7", "♠")]

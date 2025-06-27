@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Union
+from typing import Optional
 
 import click
 
@@ -7,9 +7,9 @@ from blackjack.entities.deck_schema import StandardBlackjackSchema
 from blackjack.entities.random_wrapper import RandomWrapper
 from blackjack.entities.shoe import Shoe
 from blackjack.game import Game
-from blackjack.game_events import GameResult
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.strategy import RandomStrategy, StandardDealerStrategy
+from blackjack.entities.state_transition_graph import StateTransitionGraph
 
 
 class BlackjackCLI:
@@ -65,9 +65,9 @@ class BlackjackCLI:
 
     def run(
         self, num_players: int, num_rounds: int = 1, shuffle_between_rounds: bool = True, printable: bool = True
-    ) -> Union[GameResult, list[GameResult]]:
+    ) -> StateTransitionGraph:
         logging.basicConfig(level=logging.INFO, format="%(message)s")
-        results = []
+        graph = StateTransitionGraph()
 
         for round_num in range(1, num_rounds + 1):
             if printable and num_rounds > 1:
@@ -80,25 +80,17 @@ class BlackjackCLI:
                 self.rules,
                 self.dealer_strategy,
                 output_tracker=self.output_tracker,
+                state_transition_graph=graph,
             )
-            result = game.play_round()
-            results.append(result)
+            game.play_round()
 
             if printable:
-                for i, player_result in enumerate(result.player_results):
-                    hand_str = " ".join(str(card) for card in player_result.hand)
-                    print(f"Player {i+1} final hand: {hand_str}")
-
-                dealer_hand_str = " ".join(str(card) for card in result.dealer_hand)
-                print(f"Dealer final hand: {dealer_hand_str}")
-                print(f"Result: {result.winner.name if result.winner else 'Unknown'}")
-                if result.state_transition_graph is not None:
-                    print("\nState Transition Graph:")
-                    for state, actions in result.state_transition_graph.get_graph().items():
-                        print(f"  {state}:")
-                        for action, next_states in actions.items():
-                            for next_state, count in next_states.items():
-                                print(f"    --{action.name}--> {next_state} [count={count}]")
+                print("\nState Transition Graph:")
+                for state, actions in graph.get_graph().items():
+                    print(f"  {state}:")
+                    for action, next_states in actions.items():
+                        for next_state, count in next_states.items():
+                            print(f"    --{action.name}--> {next_state} [count={count}]")
 
             if shuffle_between_rounds and round_num < num_rounds:
                 self.shoe.shuffle()
@@ -109,7 +101,7 @@ class BlackjackCLI:
             print("\n=== Summary ===")
             print(f"Total rounds played: {num_rounds}")
 
-        return results[0] if num_rounds == 1 else results
+        return graph
 
 
 @click.command()

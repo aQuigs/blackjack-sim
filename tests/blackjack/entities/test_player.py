@@ -41,7 +41,7 @@ def test_game_all_players_bust():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=2, printable=False)
+    result = cli.run(num_players=2, printable=False)[0]
     assert result.player_results[0].outcome == PlayerOutcome.BUST
     assert result.player_results[1].outcome == PlayerOutcome.BUST
     assert result.player_results[0].hand == [Card("10", "♠"), Card("2", "♣"), Card("8", "♦"), Card("5", "♣")]
@@ -81,7 +81,7 @@ def test_game_all_players_blackjack():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=2, printable=False)
+    result = cli.run(num_players=2, printable=False)[0]
     for player_result in result.player_results:
         assert player_result.outcome == PlayerOutcome.BLACKJACK
     assert result.player_results[0].hand == [Card("A", "♠"), Card("K", "♠")]
@@ -116,7 +116,7 @@ def test_player_wins_when_dealer_busts():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=1, printable=False)
+    result = cli.run(num_players=1, printable=False)[0]
     assert result.player_results[0].outcome == PlayerOutcome.ACTIVE
     assert result.winner == Winner.PLAYER
     assert result.player_results[0].hand == [Card("10", "♠"), Card("Q", "♠")]
@@ -150,7 +150,7 @@ def test_game_push():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    result = cli.run(num_players=1, printable=False)
+    result = cli.run(num_players=1, printable=False)[0]
     assert result.player_results[0].outcome == PlayerOutcome.ACTIVE
     assert result.winner == Winner.PUSH
     assert result.player_results[0].hand == [Card("10", "♠"), Card("Q", "♠")]
@@ -178,7 +178,7 @@ def test_state_transition_graph_simple_game():
         dealer_strategy=StandardDealerStrategy(),
         shoe_cards=list(reversed(shoe_cards)),
     )
-    result = cli.run(num_players=1, printable=False)
+    result = cli.run(num_players=1, printable=False)[0]
     graph = result.state_transition_graph.get_graph()
     # There should be at least one transition from the initial state via HIT
     found = False

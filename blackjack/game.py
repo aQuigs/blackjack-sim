@@ -13,13 +13,11 @@ from blackjack.game_events import (
     DealEvent,
     GameEvent,
     GameEventType,
-    GameResult,
     HitEvent,
     NoActionsEvent,
     PlayerOutcome,
     PlayerResult,
     TwentyOneEvent,
-    Winner,
 )
 from blackjack.rules.base import Rules
 from blackjack.strategy.base import Strategy
@@ -32,6 +30,7 @@ class Game:
         shoe: Shoe,
         rules: Rules,
         dealer_strategy: Strategy,
+        state_transition_graph: StateTransitionGraph,
         output_tracker: Optional[Callable[[GameEvent], None]] = None,
     ) -> None:
         self.shoe: Shoe = shoe
@@ -41,7 +40,7 @@ class Game:
         self.dealer_strategy: Strategy = dealer_strategy
         self.event_log: list[GameEvent] = []
         self._output_tracker = output_tracker or self.event_log.append
-        self.state_transition_graph = StateTransitionGraph()
+        self.state_transition_graph = state_transition_graph
 
     def _track(self, event: GameEvent) -> None:
         self._output_tracker(event)
@@ -246,35 +245,11 @@ class Game:
 
         return player_results
 
-    def play_round(self) -> GameResult:
+    def play_round(self) -> StateTransitionGraph:
         self.event_log.clear()
         self.initial_deal()
 
         last_player_states = self.play_turns()
-        player_results = self.compute_player_results()
-
-        dealer_hand = list(self.dealer.hand.cards)
-        winner = Winner.NONE
-        if len(self.players) == 1:
-            # TODO clean up and remove
-
-            player = self.players[0]
-            # Use rules to determine winner
-            player_bust = self.rules.is_bust(player.hand)
-            dealer_bust = self.rules.is_bust(self.dealer.hand)
-            if player_bust:
-                winner = Winner.DEALER
-            elif dealer_bust:
-                winner = Winner.PLAYER
-            else:
-                player_value = self.rules.hand_value(player.hand).value
-                dealer_value = self.rules.hand_value(self.dealer.hand).value
-                if player_value > dealer_value:
-                    winner = Winner.PLAYER
-                elif player_value < dealer_value:
-                    winner = Winner.DEALER
-                else:
-                    winner = Winner.PUSH
 
         for player in self.players:
             last_state = last_player_states[player.name]
@@ -282,9 +257,4 @@ class Game:
                 final_outcome = self.rules.determine_outcome(player.hand, self.dealer.hand)
                 self.state_transition_graph.add_transition(last_state, Action.GAME_END, TerminalState(final_outcome))
 
-        return GameResult(
-            player_results=player_results,
-            dealer_hand=dealer_hand,
-            winner=winner,
-            state_transition_graph=self.state_transition_graph,
-        )
+        return self.state_transition_graph
