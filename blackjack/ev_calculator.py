@@ -89,7 +89,6 @@ class EVCalculator:
             for next_states in actions.values():
                 for next_state in next_states:
                     all_states.add(next_state)
-                    # next_state must be processed before state
                     sorter.add(next_state, state)
 
         # Ensure all states are added (even if they have no outgoing edges)

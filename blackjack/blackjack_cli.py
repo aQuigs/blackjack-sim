@@ -3,8 +3,9 @@ from typing import Optional
 from blackjack.entities.deck_schema import StandardBlackjackSchema
 from blackjack.entities.random_wrapper import RandomWrapper
 from blackjack.entities.shoe import Shoe
+from blackjack.entities.state import State
 from blackjack.entities.state_transition_graph import StateTransitionGraph
-from blackjack.ev_calculator import EVCalculator
+from blackjack.ev_calculator import EVCalculator, StateEV
 from blackjack.game import Game
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.strategy import RandomStrategy, StandardDealerStrategy
@@ -105,6 +106,6 @@ class BlackjackService:
 
         return graph
 
-    def calculate_evs(self, graph: StateTransitionGraph):
+    def calculate_evs(self, graph: StateTransitionGraph) -> dict[State, StateEV]:
         calculator = EVCalculator(self.rules)
         return calculator.calculate_evs(graph)
