@@ -1,5 +1,7 @@
 import concurrent.futures
+import cProfile
 import logging
+import pstats
 
 import click
 
@@ -73,18 +75,43 @@ def run_parallel_batches(
     type=click.IntRange(1, 128),
     help="Number of parallel batches to run.",
 )
-def main(num_players, num_decks, num_rounds, no_shuffle_between, no_print, parallel):
+@click.option(
+    "--profile",
+    is_flag=True,
+    help="Enable profiling and save results to profile_results.prof.",
+)
+def main(num_players, num_decks, num_rounds, no_shuffle_between, no_print, parallel, profile):
     """Run a blackjack simulation from the command line."""
-    logging.basicConfig(level=logging.DEBUG, format="%(message)s")
+    logging.basicConfig(level=logging.ERROR if no_print else logging.DEBUG, format="%(message)s")
+
+    if profile and parallel > 1:
+        logging.error("Profiling is not supported with parallel processing (parallel > 1)")
+        raise SystemExit(1)
+
     try:
-        main_graph = run_parallel_batches(
-            num_decks=num_decks,
-            num_players=num_players,
-            num_rounds=num_rounds,
-            no_shuffle_between=no_shuffle_between,
-            no_print=no_print,
-            parallel=parallel,
-        )
+        if profile:
+            profiler = cProfile.Profile()
+            profiler.enable()
+
+        try:
+            main_graph = run_parallel_batches(
+                num_decks=num_decks,
+                num_players=num_players,
+                num_rounds=num_rounds,
+                no_shuffle_between=no_shuffle_between,
+                no_print=no_print,
+                parallel=parallel,
+            )
+        finally:
+            if profile:
+                profiler.disable()
+
+        if profile:
+            stats = pstats.Stats(profiler)
+            stats.sort_stats("cumulative")
+
+            stats.dump_stats("profile_results.prof")
+            print("Profile data saved to: profile_results.prof")
 
         if not no_print:
             print_state_transition_graph(main_graph)

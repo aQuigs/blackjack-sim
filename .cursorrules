@@ -53,6 +53,7 @@
 
 ### Core Principles
 
+- When generating code, only generate it for the relevant snippet. You don't need to regurgitate the entire file.
 - You must not use mocks/stubs for internal code (only for network, filesystem, DB, 3rd-party APIs)
 - All tests must be narrow, state-based, and sociable
 - You must use real dependencies, not test doubles, for internal code
