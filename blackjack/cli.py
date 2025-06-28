@@ -9,6 +9,18 @@ from blackjack.blackjack_cli import BlackjackService, print_state_transition_gra
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 
 
+def print_ev_results(state_evs):
+    """Print the EV calculation results in a readable format."""
+    print("\n=== Expected Value Analysis ===")
+
+    for state, state_ev in state_evs.items():
+        print(f"\nState: {state}")
+        print(f"  Optimal Action: {state_ev.optimal_action.name}")
+        print("  Action EVs:")
+        for action, ev in state_ev.action_evs.items():
+            print(f"    {action.name}: {ev:.4f}")
+
+
 def run_batch(
     num_decks: int,
     num_players: int,

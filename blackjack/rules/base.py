@@ -1,6 +1,7 @@
 from blackjack.action import Action
 from blackjack.entities.card import Card
 from blackjack.entities.hand import Hand
+from blackjack.entities.state import Outcome
 
 
 class HandValue:
@@ -41,4 +42,7 @@ class Rules:
         raise NotImplementedError
 
     def translate_upcard(self, upcard: Card):
+        raise NotImplementedError
+
+    def get_outcome_payout(self, outcome: Outcome) -> float:
         raise NotImplementedError

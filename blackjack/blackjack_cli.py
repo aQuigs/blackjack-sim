@@ -4,6 +4,7 @@ from blackjack.entities.deck_schema import StandardBlackjackSchema
 from blackjack.entities.random_wrapper import RandomWrapper
 from blackjack.entities.shoe import Shoe
 from blackjack.entities.state_transition_graph import StateTransitionGraph
+from blackjack.ev_calculator import EVCalculator
 from blackjack.game import Game
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.strategy import RandomStrategy, StandardDealerStrategy
@@ -103,3 +104,7 @@ class BlackjackService:
             print(f"Total rounds played: {num_rounds}")
 
         return graph
+
+    def calculate_evs(self, graph: StateTransitionGraph):
+        calculator = EVCalculator(self.rules)
+        return calculator.calculate_evs(graph)

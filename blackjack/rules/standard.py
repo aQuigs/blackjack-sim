@@ -66,3 +66,15 @@ class StandardBlackjackRules(Rules):
 
     def translate_upcard(self, upcard: Card) -> str:
         return "10" if upcard.rank in TEN_RANKS else upcard.rank
+
+    def get_outcome_payout(self, outcome: Outcome) -> float:
+        if outcome == Outcome.BLACKJACK:
+            return self.blackjack_payout()
+        elif outcome == Outcome.WIN:
+            return 1.0
+        elif outcome == Outcome.LOSE or outcome == Outcome.BUST:
+            return -1.0
+        elif outcome == Outcome.PUSH:
+            return 0.0
+        else:
+            raise ValueError(f"Unknown outcome: {outcome}")
