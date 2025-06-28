@@ -1,5 +1,5 @@
 from blackjack.action import Action
-from blackjack.cli import BlackjackCLI
+from blackjack.cli import BlackjackService
 from blackjack.entities.card import Card
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.game import Game
@@ -27,8 +27,8 @@ FIXED_SHOE = [
 
 def test_multiple_rounds_with_shuffling():
     event_logs = []
-    cli = BlackjackCLI.create_null(shoe_cards=list(FIXED_SHOE), output_tracker=lambda e: event_logs.append([e]))
-    cli.run(1, num_rounds=2, shuffle_between_rounds=True, printable=False)
+    cli = BlackjackService.create_null(shoe_cards=list(FIXED_SHOE), output_tracker=lambda e: event_logs.append([e]))
+    cli.play_games(1, num_rounds=2, shuffle_between_rounds=True, printable=False)
     for event_log in event_logs:
         hands, outcomes = parse_final_hands_and_outcomes(event_log)
         if hands:
@@ -37,12 +37,12 @@ def test_multiple_rounds_with_shuffling():
 
 def test_multiple_rounds_without_shuffling():
     event_logs = []
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         shoe_cards=list(FIXED_SHOE),
         choice_responses=[Action.HIT, Action.HIT],
         output_tracker=lambda e: event_logs.append([e]),
     )
-    cli.run(1, num_rounds=2, shuffle_between_rounds=False, printable=False)
+    cli.play_games(1, num_rounds=2, shuffle_between_rounds=False, printable=False)
     for event_log in event_logs:
         hands, outcomes = parse_final_hands_and_outcomes(event_log)
         if hands:

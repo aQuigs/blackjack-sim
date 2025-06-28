@@ -1,7 +1,7 @@
 import pytest
 
 from blackjack.action import Action
-from blackjack.cli import BlackjackCLI
+from blackjack.cli import BlackjackService
 from blackjack.entities.card import Card
 from blackjack.entities.hand import Hand
 from blackjack.entities.state import Outcome
@@ -139,14 +139,14 @@ def test_blackjack_detection():
         Card("3", "♠"),
     ]
     event_log = []
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         num_decks=1,
         player_strategy=AlwaysStandStrategy(),
         dealer_strategy=StandardDealerStrategy(),
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    cli.run(num_players=1, printable=False)
+    cli.play_games(num_players=1, printable=False)
     hands, outcomes = parse_final_hands_and_outcomes(event_log)
     assert outcomes["Player 1"] == Outcome.BLACKJACK
     assert hands["Player 1"] == [Card("A", "♠"), Card("K", "♠")]
@@ -166,14 +166,14 @@ def test_bust_detection():
         Card("2", "♦"),  # Dealer extra
     ]
     event_log = []
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         num_decks=1,
         player_strategy=AlwaysHitStrategy(),
         dealer_strategy=StandardDealerStrategy(),
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    cli.run(num_players=1, printable=False)
+    cli.play_games(num_players=1, printable=False)
     hands, outcomes = parse_final_hands_and_outcomes(event_log)
     assert outcomes["Player 1"] == Outcome.BUST
     assert hands["Player 1"] == [Card("10", "♠"), Card("5", "♦"), Card("7", "♠")]
@@ -195,14 +195,14 @@ def test_dealer_hits_on_16_stands_on_17():
         Card("5", "♠"),  # More dealer extra
     ]
     event_log = []
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         num_decks=1,
         player_strategy=AlwaysStandStrategy(),
         dealer_strategy=StandardDealerStrategy(),
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    cli.run(num_players=1, printable=False)
+    cli.play_games(num_players=1, printable=False)
     hands, outcomes = parse_final_hands_and_outcomes(event_log)
     # Dealer may only have initial cards if not required to hit
     assert "Dealer" in hands
@@ -224,14 +224,14 @@ def test_available_actions_and_can_continue():
         Card("2", "♣"),  # Dealer extra
     ]
     event_log = []
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         num_decks=1,
         player_strategy=AlwaysHitStrategy(),
         dealer_strategy=StandardDealerStrategy(),
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    cli.run(num_players=1, printable=False)
+    cli.play_games(num_players=1, printable=False)
     hands, outcomes = parse_final_hands_and_outcomes(event_log)
     assert outcomes["Player 1"] == Outcome.BUST
     assert "Dealer" in hands

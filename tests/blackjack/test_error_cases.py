@@ -1,6 +1,6 @@
 import pytest
 
-from blackjack.cli import BlackjackCLI
+from blackjack.cli import BlackjackService
 from blackjack.entities.card import Card
 from blackjack.entities.state import Outcome
 from blackjack.game_events import GameEventType
@@ -32,7 +32,7 @@ def test_shoe_exhaustion_raises_value_error():
         Card("8", "♣"),  # Dealer second card
     ]
 
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         num_decks=1,
         player_strategy=AlwaysHitStrategy(),
         dealer_strategy=AlwaysStandStrategy(),
@@ -40,7 +40,7 @@ def test_shoe_exhaustion_raises_value_error():
     )
 
     with pytest.raises(ValueError, match="No more cards in the shoe"):
-        cli.run(num_players=1, printable=False)
+        cli.play_games(num_players=1, printable=False)
 
 
 def test_blackjack_and_bust_are_reported():
@@ -67,7 +67,7 @@ def test_blackjack_and_bust_are_reported():
     ]
 
     event_log = []
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         num_decks=1,
         player_strategy=StandThenHitStrategy(),
         dealer_strategy=AlwaysStandStrategy(),
@@ -75,7 +75,7 @@ def test_blackjack_and_bust_are_reported():
         output_tracker=event_log.append,
     )
 
-    cli.run(num_players=1, printable=False)
+    cli.play_games(num_players=1, printable=False)
     hands, outcomes = parse_final_hands_and_outcomes(event_log)
     assert outcomes["Player 1"] == Outcome.BLACKJACK
     assert hands["Player 1"] == [Card("A", "♠"), Card("10", "♦")]
@@ -91,7 +91,7 @@ def test_blackjack_and_bust_are_reported():
     ]
 
     event_log = []
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         num_decks=1,
         player_strategy=AlwaysHitStrategy(),
         dealer_strategy=AlwaysStandStrategy(),
@@ -99,7 +99,7 @@ def test_blackjack_and_bust_are_reported():
         output_tracker=event_log.append,
     )
 
-    cli.run(num_players=1, printable=False)
+    cli.play_games(num_players=1, printable=False)
     hands, outcomes = parse_final_hands_and_outcomes(event_log)
     assert outcomes["Player 1"] == Outcome.BUST
 
@@ -114,14 +114,14 @@ def test_event_log_consistency_simple_game():
         Card("8", "♣"),  # Dealer second
         Card("4", "♠"),  # Player hit
     ]
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         num_decks=1,
         player_strategy=AlwaysHitStrategy(),
         dealer_strategy=AlwaysStandStrategy(),
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    cli.run(num_players=1, printable=False)
+    cli.play_games(num_players=1, printable=False)
     # Check event types in order
     event_types = [e.event_type for e in event_log]
     assert event_types[:4] == [GameEventType.DEAL] * 4
@@ -150,11 +150,11 @@ def test_invalid_action_raises_runtime_error():
         Card("7", "♦"),  # Player second
         Card("8", "♣"),  # Dealer second
     ]
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         num_decks=1,
         player_strategy=InvalidActionStrategy(),
         dealer_strategy=AlwaysStandStrategy(),
         shoe_cards=list(reversed(shoe_cards)),
     )
     with pytest.raises(RuntimeError, match="No valid action available"):
-        cli.run(num_players=1, printable=False)
+        cli.play_games(num_players=1, printable=False)

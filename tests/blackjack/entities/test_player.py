@@ -1,4 +1,4 @@
-from blackjack.cli import BlackjackCLI
+from blackjack.cli import BlackjackService
 from blackjack.entities.card import Card
 from blackjack.entities.state import Outcome
 from blackjack.game_events import GameEventType
@@ -36,14 +36,14 @@ def test_game_all_players_bust():
         Card("3", "♦"),  # Dealer extra
     ]
     event_log = []
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         num_decks=1,
         player_strategy=AlwaysHitStrategy(),
         dealer_strategy=StandardDealerStrategy(),
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    cli.run(num_players=2, printable=False)
+    cli.play_games(num_players=2, printable=False)
     hands, outcomes = parse_final_hands_and_outcomes(event_log)
     assert outcomes["Player 1"] == Outcome.BUST
     assert outcomes["Player 2"] == Outcome.BUST
@@ -73,14 +73,14 @@ def test_game_all_players_blackjack():
         Card("8", "♣"),
     ]
     event_log = []
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         num_decks=1,
         player_strategy=AlwaysStandStrategy(),
         dealer_strategy=StandardDealerStrategy(),
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    cli.run(num_players=2, printable=False)
+    cli.play_games(num_players=2, printable=False)
     hands, outcomes = parse_final_hands_and_outcomes(event_log)
     assert outcomes["Player 1"] == Outcome.BLACKJACK
     assert outcomes["Player 2"] == Outcome.BLACKJACK
@@ -109,14 +109,14 @@ def test_player_wins_when_dealer_busts():
         Card("8", "♣"),  # D hit 2 (bust)
     ]
     event_log = []
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         num_decks=1,
         player_strategy=AlwaysStandStrategy(),
         dealer_strategy=StandardDealerStrategy(),
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    cli.run(num_players=1, printable=False)
+    cli.play_games(num_players=1, printable=False)
     hands, outcomes = parse_final_hands_and_outcomes(event_log)
     assert outcomes["Player 1"] == Outcome.WIN
     assert hands["Player 1"] == [Card("10", "♠"), Card("Q", "♠")]
@@ -141,14 +141,14 @@ def test_game_push():
         Card("Q", "♣"),
     ]
     event_log = []
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         num_decks=1,
         player_strategy=AlwaysStandStrategy(),
         dealer_strategy=StandardDealerStrategy(),
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    cli.run(num_players=1, printable=False)
+    cli.play_games(num_players=1, printable=False)
     hands, outcomes = parse_final_hands_and_outcomes(event_log)
     assert outcomes["Player 1"] == Outcome.PUSH
     assert hands["Player 1"] == [Card("10", "♠"), Card("Q", "♠")]
@@ -170,13 +170,13 @@ def test_state_transition_graph_simple_game():
         Card("8", "♣"),  # Dealer second
         Card("4", "♠"),  # Player hit
     ]
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         num_decks=1,
         player_strategy=AlwaysHitStrategy(),
         dealer_strategy=StandardDealerStrategy(),
         shoe_cards=list(reversed(shoe_cards)),
     )
-    graph = cli.run(num_players=1, printable=False).get_graph()
+    graph = cli.play_games(num_players=1, printable=False).get_graph()
     # There should be at least one transition from the initial state via HIT
     found = False
     for _state, actions in graph.items():
@@ -208,14 +208,14 @@ def test_normal_win_and_loss():
         Card("8", "♣"),  # Dealer second card
     ]
     event_log = []
-    cli = BlackjackCLI.create_null(
+    cli = BlackjackService.create_null(
         num_decks=1,
         player_strategy=AlwaysStandStrategy(),
         dealer_strategy=StandardDealerStrategy(),
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    cli.run(num_players=2, printable=False)
+    cli.play_games(num_players=2, printable=False)
     hands, outcomes = parse_final_hands_and_outcomes(event_log)
     assert outcomes["Player 1"] == Outcome.WIN
     assert outcomes["Player 2"] == Outcome.LOSE

@@ -17,7 +17,7 @@ def print_state_transition_graph(graph: StateTransitionGraph) -> None:
                 print(f"    --{action.name}--> {next_state} [count={count}]")
 
 
-class BlackjackCLI:
+class BlackjackService:
     def __init__(
         self,
         num_decks=1,
@@ -68,7 +68,7 @@ class BlackjackCLI:
             shoe=shoe,
         )
 
-    def run(
+    def play_games(
         self, num_players: int, num_rounds: int = 1, shuffle_between_rounds: bool = True, printable: bool = True
     ) -> StateTransitionGraph:
         graph = StateTransitionGraph()

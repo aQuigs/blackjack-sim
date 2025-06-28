@@ -5,7 +5,7 @@ import pstats
 
 import click
 
-from blackjack.blackjack_cli import BlackjackCLI, print_state_transition_graph
+from blackjack.blackjack_cli import BlackjackService, print_state_transition_graph
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 
 
@@ -16,9 +16,9 @@ def run_batch(
     shuffle_between_rounds: bool,
     printable: bool = True,
 ) -> StateTransitionGraph:
-    cli = BlackjackCLI(num_decks=num_decks)
+    cli = BlackjackService(num_decks=num_decks)
 
-    return cli.run(
+    return cli.play_games(
         num_players=num_players,
         num_rounds=num_rounds,
         shuffle_between_rounds=shuffle_between_rounds,
