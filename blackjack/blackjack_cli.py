@@ -9,6 +9,14 @@ from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.strategy import RandomStrategy, StandardDealerStrategy
 
 
+def print_state_transition_graph(graph: StateTransitionGraph) -> None:
+    for state, actions in graph.get_graph().items():
+        print(f"  {state}:")
+        for action, next_states in actions.items():
+            for next_state, count in next_states.items():
+                print(f"    --{action.name}--> {next_state} [count={count}]")
+
+
 class BlackjackCLI:
     def __init__(
         self,
@@ -83,8 +91,6 @@ class BlackjackCLI:
             game.play_round()
 
             if printable:
-                from blackjack.cli import print_state_transition_graph
-
                 print_state_transition_graph(graph)
 
             if shuffle_between_rounds and round_num < num_rounds:

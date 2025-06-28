@@ -3,16 +3,8 @@ import logging
 
 import click
 
-from blackjack.blackjack_cli import BlackjackCLI
+from blackjack.blackjack_cli import BlackjackCLI, print_state_transition_graph
 from blackjack.entities.state_transition_graph import StateTransitionGraph
-
-
-def print_state_transition_graph(graph: StateTransitionGraph) -> None:
-    for state, actions in graph.get_graph().items():
-        print(f"  {state}:")
-        for action, next_states in actions.items():
-            for next_state, count in next_states.items():
-                print(f"    --{action.name}--> {next_state} [count={count}]")
 
 
 def run_batch(
