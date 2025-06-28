@@ -5,7 +5,7 @@ import pstats
 
 import click
 
-from blackjack.blackjack_cli import BlackjackService, print_state_transition_graph
+from blackjack.blackjack_service import BlackjackService, print_state_transition_graph
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 
 

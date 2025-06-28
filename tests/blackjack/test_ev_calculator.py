@@ -1,5 +1,5 @@
 from blackjack.action import Action
-from blackjack.blackjack_cli import BlackjackService
+from blackjack.blackjack_service import BlackjackService
 from blackjack.entities.card import Card
 from blackjack.entities.state import Outcome, ProperState, TerminalState, Turn
 from blackjack.entities.state_transition_graph import StateTransitionGraph
