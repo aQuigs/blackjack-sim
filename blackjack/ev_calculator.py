@@ -80,7 +80,8 @@ class EVCalculator:
 
     def _get_state_ev(self, state: State, state_evs: dict[State, StateEV]) -> float:
         assert state in state_evs, f"Next state {state} not found in state_evs. This is a bug."
-        return state_evs[state].action_evs.get(Action.GAME_END, 0.0)
+        state_ev = state_evs[state]
+        return state_ev.action_evs[state_ev.optimal_action]
 
     def _topological_sort(self, transitions: dict[State, dict[Action, dict[State, int]]]) -> list[State]:
         sorter: TopologicalSorter = TopologicalSorter()
