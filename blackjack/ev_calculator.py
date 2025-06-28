@@ -50,7 +50,7 @@ class EVCalculator:
         for outcome in self.rules.get_possible_outcomes():
             terminal_state = TerminalState(outcome)
             payout = self.rules.get_outcome_payout(outcome)
-            state_evs[terminal_state] = StateEV(Action.GAME_END, {Action.GAME_END: payout}, 0)
+            state_evs[terminal_state] = StateEV(Action.GAME_END, {Action.GAME_END: payout}, 1)
 
     def _calculate_action_evs(
         self, state: State, actions: dict[Action, dict[State, int]], state_evs: dict[State, StateEV]

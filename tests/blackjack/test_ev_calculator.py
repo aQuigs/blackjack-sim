@@ -39,14 +39,19 @@ class TestEVCalculator:
 
         if win_state in result:
             assert result[win_state].action_evs[Action.GAME_END] == 1.0
+            assert result[win_state].total_count == 1
         if lose_state in result:
             assert result[lose_state].action_evs[Action.GAME_END] == -1.0
+            assert result[lose_state].total_count == 1
         if push_state in result:
             assert result[push_state].action_evs[Action.GAME_END] == 0.0
+            assert result[push_state].total_count == 1
         if bust_state in result:
             assert result[bust_state].action_evs[Action.GAME_END] == -1.0
+            assert result[bust_state].total_count == 1
         if blackjack_state in result:
             assert result[blackjack_state].action_evs[Action.GAME_END] == 1.5
+            assert result[blackjack_state].total_count == 1
 
     def test_simple_win_scenario(self):
         # Create a game where player stands with 20, dealer has 19
@@ -168,3 +173,56 @@ class TestEVCalculator:
         if blackjack_state:
             assert result[blackjack_state].optimal_action == Action.GAME_END
             assert result[blackjack_state].action_evs[Action.GAME_END] == 1.5
+
+    def test_total_count_calculation_for_non_terminal_states(self):
+        # Create a simple game scenario to test total_count calculation
+        cards = [
+            Card("10", "♠"),  # Player first card
+            Card("9", "♣"),  # Dealer first card
+            Card("10", "♦"),  # Player second card (20)
+            Card("10", "♥"),  # Dealer second card (19)
+        ]
+        service = BlackjackService.create_null(shoe_cards=cards, player_strategy=AlwaysStandStrategy())
+        graph = service.play_games(num_players=1, num_rounds=1, printable=False)
+        result = service.calculate_evs(graph)
+
+        # Find non-terminal states and verify their total_count
+        for state, state_ev in result.items():
+            if not isinstance(state, TerminalState):
+                # For non-terminal states, total_count should be the sum of all action counts
+                # from the transition graph for this state
+                expected_count = 0
+                if state in graph.get_graph():
+                    for next_states in graph.get_graph()[state].values():
+                        expected_count += sum(next_states.values())
+
+                assert state_ev.total_count == expected_count, f"State {state} has incorrect total_count"
+
+    def test_total_count_with_multiple_rounds(self):
+        # Test that total_count accumulates correctly across multiple rounds
+        cards = [
+            Card("10", "♠"),  # Player first card
+            Card("9", "♣"),  # Dealer first card
+            Card("10", "♦"),  # Player second card (20)
+            Card("10", "♥"),  # Dealer second card (19)
+        ] * 3  # Repeat for 3 rounds
+        service = BlackjackService.create_null(shoe_cards=cards, player_strategy=AlwaysStandStrategy())
+        graph = service.play_games(num_players=1, num_rounds=3, printable=False)
+        result = service.calculate_evs(graph)
+
+        # Find the player state with 20 and verify its total_count
+        player_state_20 = None
+        for state in result:
+            if isinstance(state, ProperState) and state.player_hand_value == 20 and state.turn == Turn.PLAYER:
+                player_state_20 = state
+                break
+
+        if player_state_20:
+            # The state should be encountered 3 times (once per round)
+            assert player_state_20 in graph.get_graph()
+            expected_count = 0
+            for next_states in graph.get_graph()[player_state_20].values():
+                expected_count += sum(next_states.values())
+
+            assert result[player_state_20].total_count == expected_count
+            assert result[player_state_20].total_count >= 3  # Should be at least 3
