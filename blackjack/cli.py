@@ -128,6 +128,15 @@ def main(num_players, num_decks, num_rounds, no_shuffle_between, no_print, paral
         if not no_print:
             print_state_transition_graph(main_graph)
 
+        # Calculate and print EV analysis
+        if not no_print:
+            try:
+                cli = BlackjackService(num_decks=num_decks)
+                state_evs = cli.calculate_evs(main_graph)
+                print_ev_results(state_evs)
+            except Exception as exc:
+                logging.error(f"Error calculating EV analysis: {exc}")
+
     except Exception as exc:
         logging.error(f"Error running blackjack simulation: {exc}")
         raise SystemExit(1)

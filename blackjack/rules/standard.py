@@ -78,3 +78,6 @@ class StandardBlackjackRules(Rules):
             return 0.0
         else:
             raise ValueError(f"Unknown outcome: {outcome}")
+
+    def get_possible_outcomes(self) -> list[Outcome]:
+        return [Outcome.WIN, Outcome.LOSE, Outcome.PUSH, Outcome.BUST, Outcome.BLACKJACK]

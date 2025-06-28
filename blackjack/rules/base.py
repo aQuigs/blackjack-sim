@@ -46,3 +46,6 @@ class Rules:
 
     def get_outcome_payout(self, outcome: Outcome) -> float:
         raise NotImplementedError
+
+    def get_possible_outcomes(self) -> list[Outcome]:
+        raise NotImplementedError
