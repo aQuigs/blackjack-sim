@@ -11,6 +11,7 @@ from blackjack.rules.base import Rules
 class StateEV:
     optimal_action: Action
     action_evs: dict[Action, float]
+    total_count: int
 
 
 class EVCalculator:
@@ -38,7 +39,8 @@ class EVCalculator:
             action_evs = self._calculate_action_evs(state, transitions[state], state_evs)
 
             optimal_action = max(action_evs, key=lambda a: action_evs[a])
-            state_evs[state] = StateEV(optimal_action, action_evs)
+            total_count = sum(sum(next_states.values()) for next_states in transitions[state].values())
+            state_evs[state] = StateEV(optimal_action, action_evs, total_count)
 
         return state_evs
 
@@ -48,7 +50,7 @@ class EVCalculator:
         for outcome in self.rules.get_possible_outcomes():
             terminal_state = TerminalState(outcome)
             payout = self.rules.get_outcome_payout(outcome)
-            state_evs[terminal_state] = StateEV(Action.GAME_END, {Action.GAME_END: payout})
+            state_evs[terminal_state] = StateEV(Action.GAME_END, {Action.GAME_END: payout}, 0)
 
     def _calculate_action_evs(
         self, state: State, actions: dict[Action, dict[State, int]], state_evs: dict[State, StateEV]
