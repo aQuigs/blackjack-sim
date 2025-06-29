@@ -7,7 +7,7 @@ from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.rules.base import Rules
 
 
-@dataclass
+@dataclass(frozen=True)
 class StateEV:
     optimal_action: Action
     action_evs: dict[Action, float]
