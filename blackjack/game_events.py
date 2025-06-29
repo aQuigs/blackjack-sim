@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import ClassVar, Optional, Union
 
-from blackjack.action import Action
 from blackjack.entities.card import Card
 from blackjack.entities.state import Outcome
+from blackjack.turn.action import Action
 
 
 class GameEventType(Enum):

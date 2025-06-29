@@ -4,6 +4,7 @@ from blackjack.entities.state import Outcome
 from blackjack.game_events import GameEventType
 from blackjack.strategy.base import Strategy
 from blackjack.strategy.strategy import StandardDealerStrategy
+from blackjack.turn.action import Action
 from tests.blackjack.conftest import parse_final_hands_and_outcomes
 
 
@@ -160,7 +161,6 @@ def test_game_push():
 
 def test_state_transition_graph_simple_game():
     """Test that the state transition graph contains expected transitions for a simple game."""
-    from blackjack.action import Action
     from blackjack.entities.state import TerminalState
 
     shoe_cards = [
@@ -225,7 +225,6 @@ def test_normal_win_and_loss():
 
 
 def test_state_transition_graph_merge():
-    from blackjack.action import Action
     from blackjack.entities.state import PreDealState, ProperState
     from blackjack.entities.state_transition_graph import StateTransitionGraph
 

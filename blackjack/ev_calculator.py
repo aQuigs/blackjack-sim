@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from graphlib import TopologicalSorter
 
-from blackjack.action import Action
 from blackjack.entities.state import State, TerminalState
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.rules.base import Rules
+from blackjack.turn.action import Action
 
 
 @dataclass(frozen=True)

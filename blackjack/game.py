@@ -1,7 +1,6 @@
 import logging
 from typing import Callable, Optional
 
-from blackjack.action import Action
 from blackjack.entities.hand import Hand
 from blackjack.entities.player import Player
 from blackjack.entities.shoe import Shoe
@@ -19,6 +18,7 @@ from blackjack.game_events import (
 )
 from blackjack.rules.base import Rules
 from blackjack.strategy.base import Strategy
+from blackjack.turn.action import Action
 
 
 class Game:

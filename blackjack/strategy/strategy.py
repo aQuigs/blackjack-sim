@@ -1,10 +1,10 @@
 from typing import Union
 
-from blackjack.action import Action
 from blackjack.entities.hand import Hand
 from blackjack.entities.random_wrapper import RandomWrapper
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.base import Strategy
+from blackjack.turn.action import Action
 
 
 class RandomStrategy(Strategy):

@@ -1,6 +1,5 @@
 import pytest
 
-from blackjack.action import Action
 from blackjack.cli import BlackjackService
 from blackjack.entities.card import Card
 from blackjack.entities.hand import Hand
@@ -9,6 +8,7 @@ from blackjack.game_events import GameEventType
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.base import Strategy
 from blackjack.strategy.strategy import StandardDealerStrategy
+from blackjack.turn.action import Action
 from tests.blackjack.conftest import parse_final_hands_and_outcomes
 
 

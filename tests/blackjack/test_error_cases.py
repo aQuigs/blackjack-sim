@@ -5,21 +5,23 @@ from blackjack.entities.card import Card
 from blackjack.entities.state import Outcome
 from blackjack.game_events import GameEventType
 from blackjack.strategy.base import Strategy
+from blackjack.turn.action import Action
 from tests.blackjack.conftest import parse_final_hands_and_outcomes
 
 
 class AlwaysHitStrategy(Strategy):
     def choose_action(self, hand, available_actions, game_state):
-        from blackjack.action import Action
-
         return Action.HIT
 
 
 class AlwaysStandStrategy(Strategy):
     def choose_action(self, hand, available_actions, game_state):
-        from blackjack.action import Action
-
         return Action.STAND
+
+
+class InvalidActionStrategy(Strategy):
+    def choose_action(self, hand, available_actions, game_state):
+        return Action.GAME_END  # Not a valid action in this context
 
 
 def test_shoe_exhaustion_raises_value_error():
@@ -51,7 +53,7 @@ def test_blackjack_and_bust_are_reported():
             self.called = False
 
         def choose_action(self, hand, available_actions, game_state):
-            from blackjack.action import Action
+            from blackjack.turn.action import Action
 
             if not self.called:
                 self.called = True
@@ -137,12 +139,6 @@ def test_event_log_consistency_simple_game():
 
 def test_invalid_action_raises_runtime_error():
     """Test that attempting an invalid action raises RuntimeError."""
-
-    class InvalidActionStrategy(Strategy):
-        def choose_action(self, hand, available_actions, game_state):
-            from blackjack.action import Action
-
-            return Action.GAME_END  # Not a valid action in this context
 
     shoe_cards = [
         Card("10", "♠"),  # Player first

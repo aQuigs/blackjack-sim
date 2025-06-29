@@ -1,5 +1,5 @@
-from blackjack.action import Action
 from blackjack.entities.hand import Hand
+from blackjack.turn.action import Action
 
 
 class Strategy:

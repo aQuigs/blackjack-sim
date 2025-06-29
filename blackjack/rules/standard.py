@@ -1,8 +1,8 @@
-from blackjack.action import Action
 from blackjack.entities.card import Card
 from blackjack.entities.hand import Hand
 from blackjack.entities.state import Outcome
 from blackjack.rules.base import HandValue, Rules
+from blackjack.turn.action import Action
 
 TEN_RANKS: set[str] = {"10", "J", "Q", "K"}
 

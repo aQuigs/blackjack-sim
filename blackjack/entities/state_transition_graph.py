@@ -1,7 +1,7 @@
 from collections import defaultdict
 
-from blackjack.action import Action
 from blackjack.entities.state import State
+from blackjack.turn.action import Action
 
 
 def _default_next_state():
