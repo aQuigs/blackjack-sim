@@ -103,4 +103,4 @@ class PreDealState(GameState):
         return "PreDealState()"
 
 
-State = Union[PreDealState, ProperState, TerminalState]
+GraphState = Union[PreDealState, ProperState, TerminalState]

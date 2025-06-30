@@ -1,4 +1,3 @@
-import logging
 from typing import Callable, Optional
 
 from blackjack.entities.hand import Hand
@@ -8,26 +7,18 @@ from blackjack.entities.state import (
     Outcome,
     PreDealState,
     ProperState,
-    State,
+    GraphState,
     TerminalState,
     Turn,
 )
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.game_events import (
-    BlackjackEvent,
-    BustEvent,
-    ChooseActionEvent,
-    DealEvent,
     GameEvent,
-    HitEvent,
     RoundResultEvent,
-    TwentyOneEvent,
 )
-from blackjack.gameplay import game_context
 from blackjack.gameplay.game_context import GameContext
-from blackjack.rules.base import Rules
+from blackjack.rules.base import HandValue, Rules
 from blackjack.strategy.base import Strategy
-from blackjack.turn.action import Action
 from blackjack.turn.state_machine import StateMachine
 from blackjack.turn.turn_state import TurnState
 
@@ -53,23 +44,24 @@ class Game:
     def _track(self, event: GameEvent) -> None:
         self.output_tracker(event)
 
-    def _make_graph_state(self, hand: Hand, is_player: bool) -> ProperState:
-        hand_value = self.game_context.rules.hand_value(hand)
+    def _make_graph_state(self, turn: Turn) -> ProperState:
+        hand: Hand = self.game_context.player.hand
+        hand_value: HandValue = self.game_context.rules.hand_value(hand)
         return ProperState(
             player_hand_value=hand_value.value,
             player_hand_soft=hand_value.soft,
             dealer_upcard_rank=self.game_context.rules.translate_upcard(self.game_context.dealer.hand.cards[0]),
-            turn=Turn.PLAYER if is_player else Turn.DEALER,
+            turn=turn,
         )
 
     def play_round(self) -> StateTransitionGraph:
         turn_state: TurnState = TurnState.PRE_DEAL
-        graph_state: State = PreDealState()
+        graph_state: GraphState = PreDealState()
 
-        while not turn_state.value.is_terminal():
-            decision, action = turn_state.value.handle_turn(self.game_context, self.output_tracker)
+        while not turn_state.handler.is_terminal():
+            decision, action = turn_state.handler.handle_turn(turn_state, self.game_context, self.output_tracker)
             next_turn_state: TurnState = self.state_machine.transition(turn_state, decision)
-            next_graph_state: State = self._make_graph_state(self.game_context)
+            next_graph_state: GraphState = self._make_graph_state(next_turn_state.turn)
             if next_graph_state != graph_state:
                 self.state_transition_graph.add_transition(graph_state, action, next_graph_state)
                 graph_state = next_graph_state
@@ -79,7 +71,7 @@ class Game:
         if not isinstance(graph_state, TerminalState):
             raise RuntimeError(f"Final graph state must be terminal, got {graph_state}")
 
-        outcome: Outcome = turn_state.value.get_outcome(turn_state)
+        outcome: Outcome = turn_state.handler.get_outcome(turn_state)
         self.output_tracker(
             RoundResultEvent(self.game_context.player.name, self.game_context.player.hand.cards, outcome)
         )

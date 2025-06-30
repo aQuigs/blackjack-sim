@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from graphlib import TopologicalSorter
 
-from blackjack.entities.state import State, TerminalState
+from blackjack.entities.state import GraphState, TerminalState
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.rules.base import Rules
 from blackjack.turn.action import Action
@@ -18,13 +18,13 @@ class EVCalculator:
     def __init__(self, rules: Rules):
         self.rules = rules
 
-    def calculate_evs(self, graph: StateTransitionGraph) -> dict[State, StateEV]:
+    def calculate_evs(self, graph: StateTransitionGraph) -> dict[GraphState, StateEV]:
         transitions = graph.get_graph()
 
         if not transitions:
             return {}
 
-        state_evs: dict[State, StateEV] = {}
+        state_evs: dict[GraphState, StateEV] = {}
 
         self._initialize_terminal_states(transitions, state_evs)
         sorted_states = self._topological_sort(transitions)
@@ -45,7 +45,7 @@ class EVCalculator:
         return state_evs
 
     def _initialize_terminal_states(
-        self, transitions: dict[State, dict[Action, dict[State, int]]], state_evs: dict[State, StateEV]
+        self, transitions: dict[GraphState, dict[Action, dict[GraphState, int]]], state_evs: dict[GraphState, StateEV]
     ) -> None:
         for outcome in self.rules.get_possible_outcomes():
             terminal_state = TerminalState(outcome)
@@ -53,7 +53,7 @@ class EVCalculator:
             state_evs[terminal_state] = StateEV(Action.NOOP, {Action.NOOP: payout}, 0)
 
     def _calculate_action_evs(
-        self, state: State, actions: dict[Action, dict[State, int]], state_evs: dict[State, StateEV]
+        self, state: GraphState, actions: dict[Action, dict[GraphState, int]], state_evs: dict[GraphState, StateEV]
     ) -> dict[Action, float]:
         action_evs = {
             action: self._calculate_single_action_ev(action, next_states, state_evs)
@@ -66,7 +66,7 @@ class EVCalculator:
         return action_evs
 
     def _calculate_single_action_ev(
-        self, action: Action, next_states: dict[State, int], state_evs: dict[State, StateEV]
+        self, action: Action, next_states: dict[GraphState, int], state_evs: dict[GraphState, StateEV]
     ) -> float:
         if not next_states:
             raise ValueError(f"Action {action} has no next states")
@@ -78,12 +78,12 @@ class EVCalculator:
             for next_state, count in next_states.items()
         )
 
-    def _get_state_ev(self, state: State, state_evs: dict[State, StateEV]) -> float:
+    def _get_state_ev(self, state: GraphState, state_evs: dict[GraphState, StateEV]) -> float:
         assert state in state_evs, f"Next state {state} not found in state_evs. This is a bug."
         state_ev = state_evs[state]
         return state_ev.action_evs[state_ev.optimal_action]
 
-    def _topological_sort(self, transitions: dict[State, dict[Action, dict[State, int]]]) -> list[State]:
+    def _topological_sort(self, transitions: dict[GraphState, dict[Action, dict[GraphState, int]]]) -> list[GraphState]:
         sorter: TopologicalSorter = TopologicalSorter()
         all_states = set()
 

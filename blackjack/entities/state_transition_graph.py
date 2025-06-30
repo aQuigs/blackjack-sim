@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from blackjack.entities.state import State
+from blackjack.entities.state import GraphState
 from blackjack.turn.action import Action
 
 
@@ -19,12 +19,12 @@ class StateTransitionGraph:
     """
 
     def __init__(self):
-        self.transitions: dict[State, dict[Action, dict[State, int]]] = defaultdict(_default_action_transition)
+        self.transitions: dict[GraphState, dict[Action, dict[GraphState, int]]] = defaultdict(_default_action_transition)
 
-    def add_transition(self, state: State, action: Action, next_state: State):
+    def add_transition(self, state: GraphState, action: Action, next_state: GraphState):
         self.transitions[state][action][next_state] += 1
 
-    def get_graph(self) -> dict[State, dict[Action, dict[State, int]]]:
+    def get_graph(self) -> dict[GraphState, dict[Action, dict[GraphState, int]]]:
         return self.transitions
 
     def __repr__(self):

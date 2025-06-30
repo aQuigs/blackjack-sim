@@ -9,23 +9,29 @@ from blackjack.gameplay.turn_handler import (
     GameOverHandler,
     PreDealHandler,
     TakeTurnHandler,
+    TurnHandler,
 )
+from blackjack.entities.state import Turn
 
 
 class TurnState(Enum):
-    PRE_DEAL = PreDealHandler()
-    CHECK_DEALER_ACE = CheckDealerAceHandler()
-    CHECK_DEALER_BLACKJACK = CheckDealerBlackjackHandler()
-    CHECK_PLAYER_BJ_WIN = CheckPlayerBjHandler()
-    CHECK_PLAYER_BJ_PUSH = CheckPlayerBjHandler()
-    PLAYER_INITIAL_TURN = TakeTurnHandler(is_player=True)
-    CHECK_PLAYER_CARD_STATE = CheckPlayerCardStateHandler(is_player=True)
-    PLAYER_TURN_CONTINUED = TakeTurnHandler(is_player=True)
-    DEALER_TURN = TakeTurnHandler(is_player=False)
-    CHECK_DEALER_CARD_STATE = CheckPlayerCardStateHandler(is_player=False)
-    EVALUATE_GAME = EvaluateGameHandler()
-    GAME_OVER_WIN = GameOverHandler()
-    GAME_OVER_BJ = GameOverHandler()
-    GAME_OVER_LOSE = GameOverHandler()
-    GAME_OVER_PUSH = GameOverHandler()
-    GAME_OVER_SURRENDER = GameOverHandler()
+    PRE_DEAL = (PreDealHandler(), Turn.PLAYER)
+    CHECK_DEALER_ACE = (CheckDealerAceHandler(), Turn.PLAYER)
+    CHECK_DEALER_BLACKJACK = (CheckDealerBlackjackHandler(), Turn.PLAYER)
+    CHECK_PLAYER_BJ_WIN = (CheckPlayerBjHandler(), Turn.PLAYER)
+    CHECK_PLAYER_BJ_PUSH = (CheckPlayerBjHandler(), Turn.PLAYER)
+    PLAYER_INITIAL_TURN = (TakeTurnHandler(is_player=True), Turn.PLAYER)
+    CHECK_PLAYER_CARD_STATE = (CheckPlayerCardStateHandler(is_player=True), Turn.PLAYER)
+    PLAYER_TURN_CONTINUED = (TakeTurnHandler(is_player=True), Turn.PLAYER)
+    DEALER_TURN = (TakeTurnHandler(is_player=False), Turn.DEALER)
+    CHECK_DEALER_CARD_STATE = (CheckPlayerCardStateHandler(is_player=False), Turn.DEALER)
+    EVALUATE_GAME = (EvaluateGameHandler(), Turn.DEALER)
+    GAME_OVER_WIN = (GameOverHandler(), Turn.PLAYER)
+    GAME_OVER_BJ = (GameOverHandler(), Turn.PLAYER)
+    GAME_OVER_LOSE = (GameOverHandler(), Turn.PLAYER)
+    GAME_OVER_PUSH = (GameOverHandler(), Turn.PLAYER)
+    GAME_OVER_SURRENDER = (GameOverHandler(), Turn.PLAYER)
+
+    def __init__(self, handler: TurnHandler, turn: Turn) -> None:
+        self.handler = handler
+        self.turn = turn

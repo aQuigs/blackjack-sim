@@ -1,8 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum, auto
-from re import I
-from typing import Any, Callable
+from typing import Callable
 
 from blackjack.entities.player import Player
 from blackjack.entities.state import Outcome
