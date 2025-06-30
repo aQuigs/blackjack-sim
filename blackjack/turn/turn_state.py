@@ -1,5 +1,6 @@
 from enum import Enum
 
+from blackjack.entities.state import Turn
 from blackjack.gameplay.turn_handler import (
     CheckDealerAceHandler,
     CheckDealerBlackjackHandler,
@@ -9,9 +10,7 @@ from blackjack.gameplay.turn_handler import (
     GameOverHandler,
     PreDealHandler,
     TakeTurnHandler,
-    TurnHandler,
 )
-from blackjack.entities.state import Turn
 
 
 class TurnState(Enum):
@@ -32,6 +31,6 @@ class TurnState(Enum):
     GAME_OVER_PUSH = (GameOverHandler(), Turn.PLAYER)
     GAME_OVER_SURRENDER = (GameOverHandler(), Turn.PLAYER)
 
-    def __init__(self, handler: TurnHandler, turn: Turn) -> None:
+    def __init__(self, handler, turn: Turn) -> None:
         self.handler = handler
         self.turn = turn

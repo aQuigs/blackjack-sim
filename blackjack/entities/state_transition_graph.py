@@ -19,7 +19,9 @@ class StateTransitionGraph:
     """
 
     def __init__(self):
-        self.transitions: dict[GraphState, dict[Action, dict[GraphState, int]]] = defaultdict(_default_action_transition)
+        self.transitions: dict[GraphState, dict[Action, dict[GraphState, int]]] = defaultdict(
+            _default_action_transition
+        )
 
     def add_transition(self, state: GraphState, action: Action, next_state: GraphState):
         self.transitions[state][action][next_state] += 1

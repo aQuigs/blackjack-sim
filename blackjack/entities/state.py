@@ -70,7 +70,7 @@ class TerminalState(GameState):
     """
 
     def __init__(self, outcome: Outcome):
-        assert outcome in (Outcome.WIN, Outcome.LOSE, Outcome.PUSH, Outcome.BUST, Outcome.BLACKJACK)
+        assert outcome in (Outcome.WIN, Outcome.LOSE, Outcome.PUSH, Outcome.BLACKJACK)
         self.outcome = outcome
 
     def __eq__(self, other):

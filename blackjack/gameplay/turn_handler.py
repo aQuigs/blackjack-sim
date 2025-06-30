@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum, auto
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 from blackjack.entities.player import Player
 from blackjack.entities.state import Outcome
@@ -17,7 +17,9 @@ from blackjack.game_events import (
 from blackjack.gameplay.game_context import GameContext
 from blackjack.rules.base import HandValue, Rules
 from blackjack.turn.action import Action
-from blackjack.turn.turn_state import TurnState
+
+if TYPE_CHECKING:
+    from blackjack.turn.turn_state import TurnState
 
 
 class Decision(Enum):
@@ -36,29 +38,32 @@ class Decision(Enum):
 
 
 class TurnHandler(ABC):
-    OUTCOME_MAPPING: dict[TurnState, Outcome] = {
-        TurnState.GAME_OVER_BJ: Outcome.BLACKJACK,
-        TurnState.GAME_OVER_WIN: Outcome.WIN,
-        TurnState.GAME_OVER_LOSE: Outcome.LOSE,
-        TurnState.GAME_OVER_PUSH: Outcome.PUSH,
-    }
 
     @abstractmethod
     def handle_turn(
-        self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]
+        self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
     ) -> tuple[Decision, Action]:
         pass
 
     def is_terminal(self) -> bool:
         return False
 
-    def get_outcome(self, state: TurnState) -> Outcome:
-        return self.OUTCOME_MAPPING.get(state, Outcome.IN_PROGRESS)
+    def get_outcome(self, state: "TurnState") -> Outcome:
+        from blackjack.turn.turn_state import TurnState
+
+        OUTCOME_MAPPING = {
+            TurnState.GAME_OVER_BJ: Outcome.BLACKJACK,
+            TurnState.GAME_OVER_WIN: Outcome.WIN,
+            TurnState.GAME_OVER_LOSE: Outcome.LOSE,
+            TurnState.GAME_OVER_PUSH: Outcome.PUSH,
+        }
+
+        return OUTCOME_MAPPING.get(state, Outcome.IN_PROGRESS)
 
 
 class PreDealHandler(TurnHandler):
     def handle_turn(
-        self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]
+        self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
     ) -> tuple[Decision, Action]:
         for _ in range(2):
             card = game_context.shoe.deal_card()
@@ -74,7 +79,7 @@ class PreDealHandler(TurnHandler):
 
 class CheckDealerAceHandler(TurnHandler):
     def handle_turn(
-        self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]
+        self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
     ) -> tuple[Decision, Action]:
         if game_context.dealer.hand.cards[0].rank == "A":
             return Decision.YES, Action.NOOP
@@ -84,7 +89,7 @@ class CheckDealerAceHandler(TurnHandler):
 
 class CheckDealerBlackjackHandler(TurnHandler):
     def handle_turn(
-        self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]
+        self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
     ) -> tuple[Decision, Action]:
         if game_context.rules.is_blackjack(game_context.dealer.hand):
             output_tracker(BlackjackEvent(player=game_context.dealer.name, hand=game_context.dealer.hand.cards.copy()))
@@ -95,7 +100,7 @@ class CheckDealerBlackjackHandler(TurnHandler):
 
 class CheckPlayerBjHandler(TurnHandler):
     def handle_turn(
-        self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]
+        self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
     ) -> tuple[Decision, Action]:
         if game_context.rules.is_blackjack(game_context.player.hand):
             output_tracker(BlackjackEvent(player=game_context.player.name, hand=game_context.player.hand.cards.copy()))
@@ -110,7 +115,7 @@ class TakeTurnHandler(TurnHandler):
         self.is_player = is_player
 
     def handle_turn(
-        self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]
+        self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
     ) -> tuple[Decision, Action]:
         rules: Rules = game_context.rules
         actor: Player = game_context.player if self.is_player else game_context.dealer
@@ -158,7 +163,7 @@ class CheckPlayerCardStateHandler(TurnHandler):
         self.is_player = is_player
 
     def handle_turn(
-        self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]
+        self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
     ) -> tuple[Decision, Action]:
         actor: Player = game_context.player if self.is_player else game_context.dealer
 
@@ -179,7 +184,7 @@ class CheckPlayerCardStateHandler(TurnHandler):
 
 class EvaluateGameHandler(TurnHandler):
     def handle_turn(
-        self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]
+        self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
     ) -> tuple[Decision, Action]:
         player_value: int = game_context.rules.hand_value(game_context.player.hand).value
         dealer_value: int = game_context.rules.hand_value(game_context.dealer.hand).value
@@ -194,7 +199,7 @@ class EvaluateGameHandler(TurnHandler):
 
 class GameOverHandler(TurnHandler):
     def handle_turn(
-        self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]
+        self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
     ) -> tuple[Decision, Action]:
         raise NotImplementedError
 
