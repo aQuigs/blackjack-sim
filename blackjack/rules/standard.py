@@ -3,6 +3,7 @@ from blackjack.entities.hand import Hand
 from blackjack.entities.state import Outcome
 from blackjack.rules.base import HandValue, Rules
 from blackjack.turn.action import Action
+from blackjack.turn.turn_state import TurnState
 
 TEN_RANKS: set[str] = {"10", "J", "Q", "K"}
 
@@ -35,34 +36,14 @@ class StandardBlackjackRules(Rules):
     def blackjack_payout(self) -> float:
         return 1.5
 
-    def available_actions(self, hand: Hand, game_state: dict[str, object]) -> list[Action]:
-        if self.is_bust(hand):
-            return []
+    def available_actions(self, turn_state: TurnState) -> list[Action]:
+        if turn_state in [TurnState.PLAYER_INITIAL_TURN, TurnState.PLAYER_TURN_CONTINUED]:
+            return [Action.HIT, Action.STAND]
 
-        return [Action.HIT, Action.STAND]
+        if turn_state == TurnState.DEALER_TURN:
+            return [Action.HIT, Action.STAND]
 
-    def can_continue(self, hand: Hand, game_state: dict[str, object]) -> bool:
-        return not self.is_bust(hand)
-
-    def determine_outcome(self, player_hand: Hand, dealer_hand: Hand) -> Outcome:
-        if self.is_blackjack(player_hand):
-            return Outcome.PUSH if self.is_blackjack(dealer_hand) else Outcome.BLACKJACK
-
-        if self.is_bust(player_hand):
-            return Outcome.BUST
-
-        if self.is_bust(dealer_hand):
-            return Outcome.WIN
-
-        player_value = self.hand_value(player_hand).value
-        dealer_value = self.hand_value(dealer_hand).value
-
-        if player_value > dealer_value:
-            return Outcome.WIN
-        elif player_value < dealer_value:
-            return Outcome.LOSE
-        else:
-            return Outcome.PUSH
+        raise RuntimeError(f"Unexpected turn state to choose actions: {turn_state}")
 
     def translate_upcard(self, upcard: Card) -> str:
         return "10" if upcard.rank in TEN_RANKS else upcard.rank
@@ -72,7 +53,7 @@ class StandardBlackjackRules(Rules):
             return self.blackjack_payout()
         elif outcome == Outcome.WIN:
             return 1.0
-        elif outcome == Outcome.LOSE or outcome == Outcome.BUST:
+        elif outcome == Outcome.LOSE:
             return -1.0
         elif outcome == Outcome.PUSH:
             return 0.0
@@ -80,4 +61,4 @@ class StandardBlackjackRules(Rules):
             raise ValueError(f"Unknown outcome: {outcome}")
 
     def get_possible_outcomes(self) -> list[Outcome]:
-        return [Outcome.WIN, Outcome.LOSE, Outcome.PUSH, Outcome.BUST, Outcome.BLACKJACK]
+        return [Outcome.WIN, Outcome.LOSE, Outcome.PUSH, Outcome.BLACKJACK]

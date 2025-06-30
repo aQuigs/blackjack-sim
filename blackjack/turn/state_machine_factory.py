@@ -28,7 +28,6 @@ def blackjack_state_machine():
             Decision.TAKE_CARD: TurnState.CHECK_PLAYER_CARD_STATE,
             Decision.SURRENDER: TurnState.GAME_OVER_SURRENDER,
             Decision.STAND: TurnState.DEALER_TURN,
-            Decision.BUST: TurnState.GAME_OVER_LOSE,
         },
         TurnState.CHECK_PLAYER_CARD_STATE: {
             Decision.NEXT: TurnState.PLAYER_TURN_CONTINUED,
@@ -38,7 +37,6 @@ def blackjack_state_machine():
         TurnState.PLAYER_TURN_CONTINUED: {
             Decision.TAKE_CARD: TurnState.CHECK_PLAYER_CARD_STATE,
             Decision.STAND: TurnState.DEALER_TURN,
-            Decision.BUST: TurnState.GAME_OVER_LOSE,
         },
         TurnState.DEALER_TURN: {
             Decision.NEXT: TurnState.EVALUATE_GAME,

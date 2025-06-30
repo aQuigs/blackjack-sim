@@ -4,14 +4,11 @@ from blackjack.gameplay.turn_handler import (
     PreDealHandler,
     CheckDealerAceHandler,
     CheckDealerBlackjackHandler,
-    CheckPlayerBjWinHandler,
-    CheckPlayerBjPushHandler,
-    PlayerInitialTurnHandler,
+    CheckPlayerBjHandler,
     CheckPlayerCardStateHandler,
-    PlayerTurnContinuedHandler,
-    DealerTurnHandler,
     EvaluateGameHandler,
     GameOverHandler,
+    TakeTurnHandler,
 )
 
 
@@ -20,12 +17,13 @@ class TurnState(Enum):
     PRE_DEAL = PreDealHandler()
     CHECK_DEALER_ACE = CheckDealerAceHandler()
     CHECK_DEALER_BLACKJACK = CheckDealerBlackjackHandler()
-    CHECK_PLAYER_BJ_WIN = CheckPlayerBjWinHandler()
-    CHECK_PLAYER_BJ_PUSH = CheckPlayerBjPushHandler()
-    PLAYER_INITIAL_TURN = PlayerInitialTurnHandler()
-    CHECK_PLAYER_CARD_STATE = CheckPlayerCardStateHandler()
-    PLAYER_TURN_CONTINUED = PlayerTurnContinuedHandler()
-    DEALER_TURN = DealerTurnHandler()
+    CHECK_PLAYER_BJ_WIN = CheckPlayerBjHandler()
+    CHECK_PLAYER_BJ_PUSH = CheckPlayerBjHandler()
+    PLAYER_INITIAL_TURN = TakeTurnHandler(is_player=True)
+    CHECK_PLAYER_CARD_STATE = CheckPlayerCardStateHandler(is_player=True)
+    PLAYER_TURN_CONTINUED = TakeTurnHandler(is_player=True)
+    DEALER_TURN = TakeTurnHandler(is_player=False)
+    CHECK_DEALER_CARD_STATE = CheckPlayerCardStateHandler(is_player=False)
     EVALUATE_GAME = EvaluateGameHandler()
     GAME_OVER_WIN = GameOverHandler()
     GAME_OVER_BJ = GameOverHandler()

@@ -11,7 +11,6 @@ class Outcome(Enum):
     WIN = auto()
     LOSE = auto()
     PUSH = auto()
-    BUST = auto()
     BLACKJACK = auto()
     IN_PROGRESS = auto()
 

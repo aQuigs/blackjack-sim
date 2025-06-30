@@ -13,12 +13,9 @@ from blackjack.game_events import (
     DealEvent,
     GameEvent,
     HitEvent,
-    RoundResultEvent,
     TwentyOneEvent,
 )
-from blackjack.gameplay import game_context
 from blackjack.gameplay.game_context import GameContext
-from blackjack.gameplay.turn_handler import Decision, TurnHandler
 from blackjack.rules.base import Rules
 from blackjack.strategy.base import Strategy
 from blackjack.turn.action import Action
@@ -29,7 +26,7 @@ from blackjack.turn.turn_state import TurnState
 class Game:
     def __init__(
         self,
-        player_strategies: list[Strategy],
+        player_strategy: Strategy,
         shoe: Shoe,
         rules: Rules,
         dealer_strategy: Strategy,
@@ -37,9 +34,9 @@ class Game:
         state_transition_graph: StateTransitionGraph,
         output_tracker: Optional[Callable[[GameEvent], None]] = None,
     ) -> None:
-        players: list[Player] = [Player(f"Player {i+1}", strategy) for i, strategy in enumerate(player_strategies)]
+        player: Player = Player("Player", player_strategy)
         dealer: Player = Player("Dealer", dealer_strategy)
-        self.game_context = GameContext(players, shoe, rules, dealer)
+        self.game_context = GameContext(player, shoe, rules, dealer)
         self.state_machine = state_machine
         self.output_tracker = output_tracker or (lambda _: None)
         self.state_transition_graph = state_transition_graph
@@ -47,167 +44,23 @@ class Game:
     def _track(self, event: GameEvent) -> None:
         self.output_tracker(event)
 
-    def _make_proper_state(self, hand: Hand, is_player: bool) -> ProperState:
-        hand_value = self.rules.hand_value(hand)
+    def _make_graph_state(self, hand: Hand, is_player: bool) -> ProperState:
+        hand_value = self.game_context.rules.hand_value(hand)
         return ProperState(
             player_hand_value=hand_value.value,
             player_hand_soft=hand_value.soft,
-            dealer_upcard_rank=self.rules.translate_upcard(self.dealer.hand.cards[0]),
+            dealer_upcard_rank=self.game_context.rules.translate_upcard(self.game_context.dealer.hand.cards[0]),
             turn=Turn.PLAYER if is_player else Turn.DEALER,
         )
-
-    def initial_deal(self) -> None:
-        for _ in range(2):
-            for player in self.players:
-                card = self.shoe.deal_card()
-                player.hand.add_card(card)
-                self._track(DealEvent(to=player.name, card=card))
-
-            card = self.shoe.deal_card()
-            self.dealer.hand.add_card(card)
-            self._track(DealEvent(to=self.dealer.name, card=card))
-
-        pre_deal_state = PreDealState()
-        for player in self.players:
-            logging.info(f"{player.name} initial hand: {player.hand}")
-            initial_state = self._make_proper_state(player.hand, is_player=True)
-            self.state_transition_graph.add_transition(pre_deal_state, Action.DEAL, initial_state)
-
-        logging.info(f"Dealer's initial hand: {self.dealer.hand}")
-
-    def play_player_turn(self, player: Player, strategy: Strategy) -> tuple[bool, ProperState]:
-        prev_state = self._make_proper_state(player.hand, is_player=True)
-        while True:
-            hand_value = self.rules.hand_value(player.hand)
-
-            if self.rules.is_bust(player.hand):
-                self._track(BustEvent(player=player.name, hand=player.hand.cards.copy(), value=hand_value.value))
-                logging.info(f"{player.name} busts with hand: {player.hand} ({hand_value})")
-                return False, prev_state
-
-            if self.rules.is_blackjack(player.hand):
-                self._track(BlackjackEvent(player=player.name, hand=player.hand.cards.copy()))
-                logging.info(f"{player.name} has blackjack with hand: {player.hand} ({hand_value})")
-                return False, prev_state
-
-            if hand_value.value == 21:
-                self._track(TwentyOneEvent(player=player.name, hand=player.hand.cards.copy()))
-                return True, prev_state
-
-            actions = self.rules.available_actions(player.hand, {})
-            if not actions:
-                raise RuntimeError(
-                    f"No valid actions available for {player.name} with hand {player.hand.cards}. "
-                    f"Available actions: {actions}"
-                )
-
-            stand, next_state = self.do_player_action(player, strategy, prev_state, actions)
-            prev_state = next_state
-            if stand:
-                return True, prev_state
-
-    def do_player_action(
-        self, player: Player, strategy: Strategy, prev_state: ProperState, actions: list[Action]
-    ) -> tuple[bool, ProperState]:
-        hand_value = self.rules.hand_value(player.hand)
-        action = strategy.choose_action(player.hand, actions, {})
-        self._track(ChooseActionEvent(player=player.name, action=action, hand=player.hand.cards.copy()))
-        logging.info(f"{player.name} chooses {action.name} with hand: {player.hand} ({hand_value})")
-
-        if action == Action.STAND:
-            next_state = self._make_proper_state(player.hand, is_player=False)
-            self.state_transition_graph.add_transition(prev_state, action, next_state)
-            return True, next_state
-        elif action == Action.HIT:
-            card = self.shoe.deal_card()
-            player.hand.add_card(card)
-            new_hand_value = self.rules.hand_value(player.hand)
-            next_state = self._make_proper_state(player.hand, is_player=True)
-            self.state_transition_graph.add_transition(prev_state, action, next_state)
-            self._track(
-                HitEvent(
-                    player=player.name,
-                    card=card,
-                    new_hand=player.hand.cards.copy(),
-                    value=new_hand_value.value,
-                )
-            )
-            logging.info(f"{player.name} receives: {card}. New hand: {player.hand} ({new_hand_value})")
-            return False, next_state
-        else:
-            raise RuntimeError(
-                f"No valid action available for {player.name} with hand {player.hand.cards}. "
-                f"Available actions: {actions}"
-            )
-
-    def play_dealer_turn(self, dealer: Player, strategy: Strategy) -> None:
-        while True:
-            if self.rules.is_bust(dealer.hand):
-                self._track(
-                    BustEvent(
-                        player=dealer.name,
-                        hand=dealer.hand.cards.copy(),
-                        value=self.rules.hand_value(dealer.hand).value,
-                    )
-                )
-                logging.info(f"{dealer.name} busts with hand: {dealer.hand} ({self.rules.hand_value(dealer.hand)})")
-                return
-
-            actions = self.rules.available_actions(dealer.hand, {})
-            if not actions:
-                raise RuntimeError(
-                    f"No valid actions available for dealer with hand {dealer.hand.cards}. "
-                    f"Available actions: {actions}"
-                )
-
-            action = strategy.choose_action(dealer.hand, actions, {})
-            self._track(ChooseActionEvent(player=dealer.name, action=action, hand=dealer.hand.cards.copy()))
-            if action == Action.STAND:
-                return
-            elif action == Action.HIT:
-                card = self.shoe.deal_card()
-                dealer.hand.add_card(card)
-                self._track(
-                    HitEvent(
-                        player=dealer.name,
-                        card=card,
-                        new_hand=dealer.hand.cards.copy(),
-                        value=self.rules.hand_value(dealer.hand).value,
-                    )
-                )
-                logging.info(
-                    f"{dealer.name} receives: {card}. New hand: {dealer.hand} ({self.rules.hand_value(dealer.hand)})"
-                )
-                continue
-            else:
-                raise RuntimeError(
-                    f"Invalid action {action} for dealer with hand {dealer.hand.cards}. "
-                    f"Available actions: {actions}"
-                )
-
-    def play_turns(self) -> dict[str, ProperState]:
-        last_player_states = {}
-        dealer_needed = False
-
-        for player in self.players:
-            needs_dealer, last_state = self.play_player_turn(player, player.strategy)
-            last_player_states[player.name] = last_state
-            if needs_dealer:
-                dealer_needed = True
-
-        if dealer_needed:
-            self.play_dealer_turn(self.dealer, self.dealer_strategy)
-
-        return last_player_states
 
     def play_round(self) -> StateTransitionGraph:
         turn_state: TurnState = TurnState.PRE_DEAL
         graph_state: State = PreDealState()
 
         while not turn_state.value.is_terminal():
-            decision, action = turn_state.value.handle_turn(self.game_context)
+            decision, action = turn_state.value.handle_turn(self.game_context, self.output_tracker)
             next_turn_state: TurnState = self.state_machine.transition(turn_state, decision)
-            next_graph_state: State = self._make_proper_state(self.game_context)
+            next_graph_state: State = self._make_graph_state(self.game_context)
             if next_graph_state != graph_state:
                 if action is None:
                     raise Exception(f"Graph state changed but action was None. {turn_state=} {next_turn_state=} {decision=}")
@@ -215,30 +68,31 @@ class Game:
                 self.state_transition_graph.add_transition(graph_state, action, next_graph_state)
                 graph_state = next_graph_state
 
+            turn_state = next_turn_state
 
-        self.initial_deal()
+        if not isinstance(graph_state, TerminalState):
+            raise RuntimeError(f"Final graph state must be terminal, got {graph_state}")
 
-        last_player_states = self.play_turns()
+        # TODO include this in the handlers
+        # for player in self.players:
+        #     hand = list(player.hand.cards)
+        #     outcome = self.rules.determine_outcome(player.hand, self.dealer.hand)
 
-        for player in self.players:
-            hand = list(player.hand.cards)
-            outcome = self.rules.determine_outcome(player.hand, self.dealer.hand)
+        #     last_state = last_player_states[player.name]
+        #     if isinstance(last_state, ProperState):
+        #         final_outcome = self.rules.determine_outcome(player.hand, self.dealer.hand)
+        #         self.state_transition_graph.add_transition(last_state, Action.GAME_END, TerminalState(final_outcome))
 
-            last_state = last_player_states[player.name]
-            if isinstance(last_state, ProperState):
-                final_outcome = self.rules.determine_outcome(player.hand, self.dealer.hand)
-                self.state_transition_graph.add_transition(last_state, Action.GAME_END, TerminalState(final_outcome))
+        #     self._track(
+        #         RoundResultEvent(
+        #             name=player.name,
+        #             hand=hand,
+        #             outcome=outcome,
+        #         )
+        #     )
 
-            self._track(
-                RoundResultEvent(
-                    name=player.name,
-                    hand=hand,
-                    outcome=outcome,
-                )
-            )
-
-        # Emit ROUND_RESULT for dealer (no outcome)
-        dealer_hand = list(self.dealer.hand.cards)
-        self._track(RoundResultEvent(name=self.dealer.name, hand=dealer_hand, outcome=None))
+        # # Emit ROUND_RESULT for dealer (no outcome)
+        # dealer_hand = list(self.dealer.hand.cards)
+        # self._track(RoundResultEvent(name=self.dealer.name, hand=dealer_hand, outcome=None))
 
         return self.state_transition_graph

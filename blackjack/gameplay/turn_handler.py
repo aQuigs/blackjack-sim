@@ -1,5 +1,16 @@
 from abc import ABC, abstractmethod
 from enum import Enum, auto
+import logging
+from re import I
+from typing import Any, Callable
+
+from blackjack.entities.player import Player
+from blackjack.entities.state import Outcome
+from blackjack.game_events import BlackjackEvent, BustEvent, ChooseActionEvent, DealEvent, GameEvent, HitEvent, TwentyOneEvent
+from blackjack.gameplay.game_context import GameContext
+from blackjack.rules.base import HandValue, Rules
+from blackjack.turn.action import Action
+from blackjack.turn.turn_state import TurnState
 
 
 class Decision(Enum):
@@ -17,113 +28,149 @@ class Decision(Enum):
 
 
 class TurnHandler(ABC):
+    OUTCOME_MAPPING: dict[TurnState, Outcome] = {
+        TurnState.GAME_OVER_BJ: Outcome.BLACKJACK,
+        TurnState.GAME_OVER_WIN: Outcome.WIN,
+        TurnState.GAME_OVER_LOSE: Outcome.LOSE,
+        TurnState.GAME_OVER_PUSH: Outcome.PUSH,
+    }
 
     @abstractmethod
-    def handle_turn(self, game_context) -> Decision, Action:
+    def handle_turn(self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]) -> tuple[Decision, Action]:
         pass
 
     def is_terminal(self) -> bool:
-        """Return True if this handler represents a terminal state (game over)."""
         return False
+
+    def get_outcome(self, state: TurnState) -> Outcome:
+        return self.OUTCOME_MAPPING.get(state, Outcome.IN_PROGRESS)
 
 
 class PreDealHandler(TurnHandler):
-    """Handler for the pre-deal state of the game."""
+    def handle_turn(self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]) -> tuple[Decision, Action]:
+        for _ in range(2):
+            card = game_context.shoe.deal_card()
+            game_context.player.hand.add_card(card)
+            output_tracker(DealEvent(to=game_context.player.name, card=card))
 
-    def handle_turn(self, game_context) -> Decision:
-        # TODO: Implement pre-deal logic
-        # This could include shuffling, placing bets, etc.
-        return Decision.NEXT
+            card = game_context.shoe.deal_card()
+            game_context.dealer.hand.add_card(card)
+            output_tracker(DealEvent(to=game_context.dealer.name, card=card))
+
+        return Decision.NEXT, Action.NOOP
 
 
 class CheckDealerAceHandler(TurnHandler):
-    """Handler for checking if dealer has an ace (insurance scenario)."""
-
-    def handle_turn(self, game_context) -> Decision:
-        # TODO: Implement dealer ace check logic
-        # Check if dealer's up card is an ace and handle insurance
-        return Decision.NEXT
+    def handle_turn(self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]) -> tuple[Decision, Action]:
+        if game_context.dealer.hand.cards[0].rank == 'A':
+            return Decision.YES, Action.NOOP
+        else:
+            return Decision.NO, Action.NOOP
 
 
 class CheckDealerBlackjackHandler(TurnHandler):
-    """Handler for checking if dealer has blackjack."""
-
-    def handle_turn(self, game_context) -> Decision:
-        # TODO: Implement dealer blackjack check logic
-        # Check if dealer has blackjack after revealing hole card
-        return Decision.NEXT
-
-
-class CheckPlayerBjWinHandler(TurnHandler):
-    """Handler for checking if player has blackjack and wins."""
-
-    def handle_turn(self, game_context) -> Decision:
-        # TODO: Implement player blackjack win check logic
-        # Check if player has blackjack and dealer doesn't
-        return Decision.NEXT
+    def handle_turn(self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]) -> tuple[Decision, Action]:
+        if game_context.rules.is_blackjack(game_context.dealer.hand):
+            output_tracker(BlackjackEvent(player=game_context.dealer.name, hand=game_context.dealer.hand.cards.copy()))
+            return Decision.YES, Action.NOOP
+        else:
+            return Decision.NO, Action.NOOP
 
 
-class CheckPlayerBjPushHandler(TurnHandler):
-    """Handler for checking if player has blackjack and pushes."""
+class CheckPlayerBjHandler(TurnHandler):
+    def handle_turn(self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]) -> tuple[Decision, Action]:
+        if game_context.rules.is_blackjack(game_context.player.hand):
+            output_tracker(BlackjackEvent(player=game_context.player.name, hand=game_context.player.hand.cards.copy()))
+            return Decision.YES, Action.NOOP
+        else:
+            return Decision.NO, Action.NOOP
 
-    def handle_turn(self, game_context) -> Decision:
-        # TODO: Implement player blackjack push check logic
-        # Check if both player and dealer have blackjack
-        return Decision.NEXT
 
+class TakeTurnHandler(TurnHandler):
+    def __init__(self, is_player: bool):
+        super().__init__()
+        self.is_player = is_player
 
-class PlayerInitialTurnHandler(TurnHandler):
-    """Handler for the player's initial turn."""
+    def handle_turn(self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]) -> tuple[Decision, Action]:
+        rules: Rules = game_context.rules
+        actor: Player = game_context.player if self.is_player else game_context.dealer
 
-    def handle_turn(self, game_context) -> Decision:
-        # TODO: Implement player initial turn logic
-        # Handle player's first action (hit, stand, double, split)
-        return Decision.NEXT
+        actions = rules.available_actions(state)
+        if not actions:
+            raise RuntimeError(
+                f"No valid actions available for {actor.name} with hand {actor.hand.cards}. "
+                f"Available actions: {actions}"
+            )
+
+        hand_value: HandValue = rules.hand_value(actor.hand)
+        action: Action = actor.strategy.choose_action(actor.hand, actions, {})
+        output_tracker(ChooseActionEvent(player=actor.name, action=action, hand=actor.hand.cards.copy()))
+        logging.info(f"{actor.name} chooses {action.name} with hand: {actor.hand} ({hand_value})")
+
+        if action == Action.STAND:
+            return Decision.STAND, (action if self.is_player else Action.NOOP)
+        elif action == Action.HIT:
+            card = game_context.shoe.deal_card()
+            actor.hand.add_card(card)
+            new_hand_value: HandValue = rules.hand_value(actor.hand)
+
+            output_tracker(
+                HitEvent(
+                    player=actor.name,
+                    card=card,
+                    new_hand=actor.hand.cards.copy(),
+                    value=new_hand_value.value,
+                )
+            )
+            logging.info(f"{actor.name} receives: {card}. New hand: {actor.hand} ({new_hand_value})")
+
+            return Decision.TAKE_CARD, (action if self.is_player else Action.NOOP)
+        else:
+            raise RuntimeError(
+                f"Invalid action {action} for player {actor.name} with hand {actor.hand.cards}. "
+                f"Available actions: {actions}"
+            )
 
 
 class CheckPlayerCardStateHandler(TurnHandler):
-    """Handler for checking the player's card state."""
+    def __init__(self, is_player: bool):
+        super().__init__()
+        self.is_player = is_player
 
-    def handle_turn(self, game_context) -> Decision:
-        # TODO: Implement player card state check logic
-        # Check if player busted, has blackjack, or can continue
-        return Decision.NEXT
+    def handle_turn(self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]) -> tuple[Decision, Action]:
+        actor: Player = game_context.player if self.is_player else game_context.dealer
 
+        rules: Rules = game_context.rules
+        hand_value: HandValue = rules.hand_value(actor.hand)
 
-class PlayerTurnContinuedHandler(TurnHandler):
-    """Handler for continued player turns."""
+        if rules.is_bust(actor.hand):
+            output_tracker(BustEvent(player=actor.name, hand=actor.hand.cards.copy(), value=hand_value.value))
+            logging.info(f"{actor.name} busts with hand: {actor.hand} ({hand_value})")
+            return Decision.BUST, Action.NOOP
 
-    def handle_turn(self, game_context) -> Decision:
-        # TODO: Implement continued player turn logic
-        # Handle subsequent player actions after initial turn
-        return Decision.NEXT
+        if hand_value.value == 21:
+            output_tracker(TwentyOneEvent(player=actor.name, hand=actor.hand.cards.copy()))
+            return Decision.STAND, Action.NOOP
 
-
-class DealerTurnHandler(TurnHandler):
-    """Handler for the dealer's turn."""
-
-    def handle_turn(self, game_context) -> Decision:
-        # TODO: Implement dealer turn logic
-        # Handle dealer's play according to house rules
-        return Decision.NEXT
+        return Decision.NEXT, Action.NOOP
 
 
 class EvaluateGameHandler(TurnHandler):
-    """Handler for evaluating the final game state."""
+    def handle_turn(self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]) -> tuple[Decision, Action]:
+        player_value: int = game_context.rules.hand_value(game_context.player.hand).value
+        dealer_value: int = game_context.rules.hand_value(game_context.dealer.hand).value
 
-    def handle_turn(self, game_context) -> Decision:
-        # TODO: Implement game evaluation logic
-        # Compare player and dealer hands to determine winner
-        return Decision.NEXT
+        if player_value > dealer_value:
+            return Decision.WINNER, Action.NOOP
+        elif player_value < dealer_value:
+            return Decision.LOSER, Action.NOOP
+        else:
+            return Decision.TIE, Action.NOOP
 
 
 class GameOverHandler(TurnHandler):
-    """Handler for the game over state."""
-
-    def handle_turn(self, game_context) -> Decision:
-        # TODO: Implement game over logic
-        # Handle payout, reset game state, etc.
-        return Decision.NEXT
+    def handle_turn(self, state: TurnState, game_context: GameContext, output_tracker: Callable[[GameEvent], None]) -> tuple[Decision, Action]:
+        raise NotImplementedError
 
     def is_terminal(self) -> bool:
         return True

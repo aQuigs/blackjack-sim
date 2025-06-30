@@ -8,13 +8,13 @@ from blackjack.rules.base import Rules
 class GameContext:
     def __init__(
         self,
-        players: list[Player],
+        player: Player,
         shoe: Shoe,
         rules: Rules,
         dealer: Player,
-    ):
-        self.players = players
-        self.shoe = shoe
-        self.rules = rules
-        self.dealer = dealer
-        self.is_player_turn = True
+    ) -> None:
+        self.player: Player = player
+        self.shoe: Shoe = shoe
+        self.rules: Rules = rules
+        self.dealer: Player = dealer
+        self.is_player_turn: bool = True
