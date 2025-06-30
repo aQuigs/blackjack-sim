@@ -1,19 +1,18 @@
 from enum import Enum
 
 from blackjack.gameplay.turn_handler import (
-    PreDealHandler,
     CheckDealerAceHandler,
     CheckDealerBlackjackHandler,
     CheckPlayerBjHandler,
     CheckPlayerCardStateHandler,
     EvaluateGameHandler,
     GameOverHandler,
+    PreDealHandler,
     TakeTurnHandler,
 )
 
 
 class TurnState(Enum):
-    """Enum representing the different states of a turn in the game."""
     PRE_DEAL = PreDealHandler()
     CHECK_DEALER_ACE = CheckDealerAceHandler()
     CHECK_DEALER_BLACKJACK = CheckDealerBlackjackHandler()

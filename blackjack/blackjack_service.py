@@ -9,6 +9,7 @@ from blackjack.ev_calculator import EVCalculator, StateEV
 from blackjack.game import Game
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.strategy import RandomStrategy, StandardDealerStrategy
+from blackjack.turn import state_machine_factory
 
 
 def print_state_transition_graph(graph: StateTransitionGraph) -> None:
@@ -26,6 +27,7 @@ class BlackjackService:
         output_tracker=None,
         deck_schema=None,
         rules=None,
+        state_machine=None,
         player_strategy=None,
         dealer_strategy=None,
         shoe: Optional[Shoe] = None,
@@ -33,6 +35,7 @@ class BlackjackService:
         self.output_tracker = output_tracker
         self.deck_schema = deck_schema or StandardBlackjackSchema()
         self.rules = rules or StandardBlackjackRules()
+        self.state_machine = state_machine or state_machine_factory.blackjack_state_machine()
         self.player_strategy = player_strategy or RandomStrategy()
         self.dealer_strategy = dealer_strategy or StandardDealerStrategy()
         self.shoe = shoe or Shoe(self.deck_schema, num_decks)
@@ -45,6 +48,7 @@ class BlackjackService:
         output_tracker=None,
         deck_schema=None,
         rules=None,
+        state_machine=None,
         player_strategy=None,
         dealer_strategy=None,
         shoe_cards=None,
@@ -65,13 +69,14 @@ class BlackjackService:
             output_tracker=output_tracker,
             deck_schema=deck_schema,
             rules=rules,
+            state_machine=state_machine,
             player_strategy=player_strategy,
             dealer_strategy=dealer_strategy,
             shoe=shoe,
         )
 
     def play_games(
-        self, num_players: int, num_rounds: int = 1, shuffle_between_rounds: bool = True, printable: bool = True
+        self, num_rounds: int = 1, shuffle_between_rounds: bool = True, printable: bool = True
     ) -> StateTransitionGraph:
         graph = StateTransitionGraph()
 
@@ -79,12 +84,11 @@ class BlackjackService:
             if printable and num_rounds > 1:
                 print(f"\n=== Round {round_num} ===")
 
-            player_strategies = [self.player_strategy for _ in range(num_players)]
-
             game = Game(
-                player_strategies,
+                self.player_strategy,
                 self.shoe,
                 self.rules,
+                self.state_machine,
                 self.dealer_strategy,
                 output_tracker=self.output_tracker,
                 state_transition_graph=graph,

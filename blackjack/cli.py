@@ -24,7 +24,6 @@ def print_ev_results(state_evs):
 
 def run_batch(
     num_decks: int,
-    num_players: int,
     num_rounds: int,
     shuffle_between_rounds: bool,
     printable: bool = True,
@@ -32,7 +31,6 @@ def run_batch(
     cli = BlackjackService(num_decks=num_decks)
 
     return cli.play_games(
-        num_players=num_players,
         num_rounds=num_rounds,
         shuffle_between_rounds=shuffle_between_rounds,
         printable=printable,
@@ -45,20 +43,19 @@ def run_batch_with_args(args):
 
 def run_parallel_batches(
     num_decks: int,
-    num_players: int,
     num_rounds: int,
     no_shuffle_between: bool,
     no_print: bool,
     parallel: int,
 ) -> StateTransitionGraph:
     if parallel == 1 or num_rounds == 1:
-        return run_batch(num_decks, num_players, num_rounds, not no_shuffle_between, not no_print)
+        return run_batch(num_decks, num_rounds, not no_shuffle_between, not no_print)
 
     base_batch = num_rounds // parallel
     remainder = num_rounds % parallel
     batch_sizes = [base_batch + (1 if i < remainder else 0) for i in range(parallel)]
 
-    args_list = [(num_decks, num_players, batch_size, not no_shuffle_between, False) for batch_size in batch_sizes]
+    args_list = [(num_decks, batch_size, not no_shuffle_between, False) for batch_size in batch_sizes]
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=parallel) as executor:
         graphs = list(executor.map(run_batch_with_args, args_list))
@@ -70,7 +67,6 @@ def run_parallel_batches(
 
 
 @click.command()
-@click.option("--num-players", default=1, show_default=True, type=click.IntRange(1, 5), help="Number of players (1-5).")
 @click.option("--num-decks", default=1, show_default=True, type=click.IntRange(1, 8), help="Number of decks (1-8).")
 @click.option(
     "--num-rounds",
@@ -93,7 +89,7 @@ def run_parallel_batches(
     is_flag=True,
     help="Enable profiling and save results to profile_results.prof.",
 )
-def main(num_players, num_decks, num_rounds, no_shuffle_between, no_print, parallel, profile):
+def main(num_decks, num_rounds, no_shuffle_between, no_print, parallel, profile):
     """Run a blackjack simulation from the command line."""
     logging.basicConfig(level=logging.ERROR if no_print else logging.DEBUG, format="%(message)s")
 
@@ -109,7 +105,6 @@ def main(num_players, num_decks, num_rounds, no_shuffle_between, no_print, paral
         try:
             main_graph = run_parallel_batches(
                 num_decks=num_decks,
-                num_players=num_players,
                 num_rounds=num_rounds,
                 no_shuffle_between=no_shuffle_between,
                 no_print=no_print,

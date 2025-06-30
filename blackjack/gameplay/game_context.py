@@ -1,5 +1,3 @@
-
-
 from blackjack.entities.player import Player
 from blackjack.entities.shoe import Shoe
 from blackjack.rules.base import Rules

@@ -6,7 +6,6 @@ class InvalidTransition(Exception):
     """Raised when no valid transition is defined for a state and decision combination."""
 
     def __init__(self, current_state: TurnState, decision: Decision):
-        self.current_state = current_state
         self.decision = decision
         super().__init__(f"No transition defined for {current_state} with decision {decision}")
 
