@@ -9,7 +9,6 @@ from blackjack.entities.state import (
     PreDealState,
     ProperState,
     TerminalState,
-    Turn,
 )
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.game_events import GameEvent, RoundResultEvent
