@@ -4,7 +4,7 @@ from typing import Callable, Optional
 from blackjack.entities.hand import Hand
 from blackjack.entities.player import Player
 from blackjack.entities.shoe import Shoe
-from blackjack.entities.state import PreDealState, ProperState, TerminalState, Turn
+from blackjack.entities.state import PreDealState, ProperState, State, TerminalState, Turn
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.game_events import (
     BlackjackEvent,
@@ -16,9 +16,14 @@ from blackjack.game_events import (
     RoundResultEvent,
     TwentyOneEvent,
 )
+from blackjack.gameplay import game_context
+from blackjack.gameplay.game_context import GameContext
+from blackjack.gameplay.turn_handler import Decision, TurnHandler
 from blackjack.rules.base import Rules
 from blackjack.strategy.base import Strategy
 from blackjack.turn.action import Action
+from blackjack.turn.state_machine import StateMachine
+from blackjack.turn.turn_state import TurnState
 
 
 class Game:
@@ -28,14 +33,14 @@ class Game:
         shoe: Shoe,
         rules: Rules,
         dealer_strategy: Strategy,
+        state_machine: StateMachine,
         state_transition_graph: StateTransitionGraph,
         output_tracker: Optional[Callable[[GameEvent], None]] = None,
     ) -> None:
-        self.shoe: Shoe = shoe
-        self.rules: Rules = rules
-        self.players: list[Player] = [Player(f"Player {i+1}", strategy) for i, strategy in enumerate(player_strategies)]
-        self.dealer: Player = Player("Dealer", dealer_strategy)
-        self.dealer_strategy: Strategy = dealer_strategy
+        players: list[Player] = [Player(f"Player {i+1}", strategy) for i, strategy in enumerate(player_strategies)]
+        dealer: Player = Player("Dealer", dealer_strategy)
+        self.game_context = GameContext(players, shoe, rules, dealer)
+        self.state_machine = state_machine
         self.output_tracker = output_tracker or (lambda _: None)
         self.state_transition_graph = state_transition_graph
 
@@ -196,6 +201,21 @@ class Game:
         return last_player_states
 
     def play_round(self) -> StateTransitionGraph:
+        turn_state: TurnState = TurnState.PRE_DEAL
+        graph_state: State = PreDealState()
+
+        while not turn_state.value.is_terminal():
+            decision, action = turn_state.value.handle_turn(self.game_context)
+            next_turn_state: TurnState = self.state_machine.transition(turn_state, decision)
+            next_graph_state: State = self._make_proper_state(self.game_context)
+            if next_graph_state != graph_state:
+                if action is None:
+                    raise Exception(f"Graph state changed but action was None. {turn_state=} {next_turn_state=} {decision=}")
+
+                self.state_transition_graph.add_transition(graph_state, action, next_graph_state)
+                graph_state = next_graph_state
+
+
         self.initial_deal()
 
         last_player_states = self.play_turns()
