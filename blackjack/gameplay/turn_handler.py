@@ -21,6 +21,8 @@ from blackjack.turn.action import Action
 if TYPE_CHECKING:
     from blackjack.turn.turn_state import TurnState
 
+logger = logging.getLogger(__name__)
+
 
 class Decision(Enum):
     """Enum representing decisions made by turn handlers."""
@@ -130,7 +132,8 @@ class TakeTurnHandler(TurnHandler):
         hand_value: HandValue = rules.hand_value(actor.hand)
         action: Action = actor.strategy.choose_action(actor.hand, actions, {})
         output_tracker(ChooseActionEvent(player=actor.name, action=action, hand=actor.hand.cards.copy()))
-        logging.info(f"{actor.name} chooses {action.name} with hand: {actor.hand} ({hand_value})")
+        if logger.isEnabledFor(logging.INFO):
+            logging.info(f"{actor.name} chooses {action.name} with hand: {actor.hand} ({hand_value})")
 
         if action == Action.STAND:
             return Decision.STAND, (action if self.is_player else Action.NOOP)
@@ -147,7 +150,8 @@ class TakeTurnHandler(TurnHandler):
                     value=new_hand_value.value,
                 )
             )
-            logging.info(f"{actor.name} receives: {card}. New hand: {actor.hand} ({new_hand_value})")
+            if logger.isEnabledFor(logging.INFO):
+                logging.info(f"{actor.name} receives: {card}. New hand: {actor.hand} ({new_hand_value})")
 
             return Decision.TAKE_CARD, (action if self.is_player else Action.NOOP)
         else:
@@ -172,7 +176,8 @@ class CheckPlayerCardStateHandler(TurnHandler):
 
         if rules.is_bust(actor.hand):
             output_tracker(BustEvent(player=actor.name, hand=actor.hand.cards.copy(), value=hand_value.value))
-            logging.info(f"{actor.name} busts with hand: {actor.hand} ({hand_value})")
+            if logger.isEnabledFor(logging.INFO):
+                logging.info(f"{actor.name} busts with hand: {actor.hand} ({hand_value})")
             return Decision.BUST, Action.NOOP
 
         if hand_value.value == 21:
