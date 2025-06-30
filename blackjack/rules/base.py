@@ -1,7 +1,12 @@
+from typing import TYPE_CHECKING
+
 from blackjack.entities.card import Card
 from blackjack.entities.hand import Hand
 from blackjack.entities.state import Outcome
 from blackjack.turn.action import Action
+
+if TYPE_CHECKING:
+    from blackjack.turn.turn_state import TurnState
 
 
 class HandValue:

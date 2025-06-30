@@ -5,6 +5,7 @@ from blackjack.game import Game
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.strategy.strategy import StandardDealerStrategy
 from blackjack.turn.action import Action
+from blackjack.turn.state_machine_factory import blackjack_state_machine
 from tests.blackjack.conftest import parse_final_hands_and_outcomes
 
 # Fixed shoe: alternating player and dealer cards for deterministic results
@@ -28,11 +29,11 @@ FIXED_SHOE = [
 def test_multiple_rounds_with_shuffling():
     event_logs = []
     cli = BlackjackService.create_null(shoe_cards=list(FIXED_SHOE), output_tracker=lambda e: event_logs.append([e]))
-    cli.play_games(1, num_rounds=2, shuffle_between_rounds=True, printable=False)
+    cli.play_games(num_rounds=2, shuffle_between_rounds=True, printable=False)
     for event_log in event_logs:
         hands, outcomes = parse_final_hands_and_outcomes(event_log)
         if hands:
-            assert ("Player 1" in hands) or ("Dealer" in hands)
+            assert ("Player" in hands) or ("Dealer" in hands)
 
 
 def test_multiple_rounds_without_shuffling():
@@ -42,11 +43,11 @@ def test_multiple_rounds_without_shuffling():
         choice_responses=[Action.HIT, Action.HIT],
         output_tracker=lambda e: event_logs.append([e]),
     )
-    cli.play_games(1, num_rounds=2, shuffle_between_rounds=False, printable=False)
+    cli.play_games(num_rounds=2, shuffle_between_rounds=False, printable=False)
     for event_log in event_logs:
         hands, outcomes = parse_final_hands_and_outcomes(event_log)
         if hands:
-            assert ("Player 1" in hands) or ("Dealer" in hands)
+            assert ("Player" in hands) or ("Dealer" in hands)
 
 
 def test_face_cards_shown_as_tens_in_graph(stacked_shoe, always_stand_strategy):
@@ -64,11 +65,13 @@ def test_face_cards_shown_as_tens_in_graph(stacked_shoe, always_stand_strategy):
     rules = StandardBlackjackRules()
     dealer_strategy = StandardDealerStrategy()
     state_graph = StateTransitionGraph()
+    state_machine = blackjack_state_machine()
 
     game = Game(
-        player_strategies=[always_stand_strategy],
+        player_strategy=always_stand_strategy,
         shoe=shoe,
         rules=rules,
+        state_machine=state_machine,
         dealer_strategy=dealer_strategy,
         state_transition_graph=state_graph,
     )

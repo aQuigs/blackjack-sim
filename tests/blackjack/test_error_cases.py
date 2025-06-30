@@ -21,7 +21,7 @@ class AlwaysStandStrategy(Strategy):
 
 class InvalidActionStrategy(Strategy):
     def choose_action(self, hand, available_actions, game_state):
-        return Action.GAME_END  # Not a valid action in this context
+        return Action.NOOP  # Not a valid action in this context
 
 
 def test_shoe_exhaustion_raises_value_error():
@@ -42,7 +42,7 @@ def test_shoe_exhaustion_raises_value_error():
     )
 
     with pytest.raises(ValueError, match="No more cards in the shoe"):
-        cli.play_games(num_players=1, printable=False)
+        cli.play_games(printable=False)
 
 
 def test_blackjack_and_bust_are_reported():
@@ -77,10 +77,10 @@ def test_blackjack_and_bust_are_reported():
         output_tracker=event_log.append,
     )
 
-    cli.play_games(num_players=1, printable=False)
+    cli.play_games(printable=False)
     hands, outcomes = parse_final_hands_and_outcomes(event_log)
-    assert outcomes["Player 1"] == Outcome.BLACKJACK
-    assert hands["Player 1"] == [Card("A", "♠"), Card("10", "♦")]
+    assert outcomes["Player"] == Outcome.BLACKJACK
+    assert hands["Player"] == [Card("A", "♠"), Card("10", "♦")]
     assert hands["Dealer"] == [Card("9", "♣"), Card("8", "♣")]
 
     # Now test bust
@@ -101,9 +101,9 @@ def test_blackjack_and_bust_are_reported():
         output_tracker=event_log.append,
     )
 
-    cli.play_games(num_players=1, printable=False)
+    cli.play_games(printable=False)
     hands, outcomes = parse_final_hands_and_outcomes(event_log)
-    assert outcomes["Player 1"] == Outcome.BUST
+    assert outcomes["Player"] == Outcome.LOSE
 
 
 def test_event_log_consistency_simple_game():
@@ -123,7 +123,7 @@ def test_event_log_consistency_simple_game():
         shoe_cards=list(reversed(shoe_cards)),
         output_tracker=event_log.append,
     )
-    cli.play_games(num_players=1, printable=False)
+    cli.play_games(printable=False)
     # Check event types in order
     event_types = [e.event_type for e in event_log]
     assert event_types[:4] == [GameEventType.DEAL] * 4
@@ -152,5 +152,5 @@ def test_invalid_action_raises_runtime_error():
         dealer_strategy=AlwaysStandStrategy(),
         shoe_cards=list(reversed(shoe_cards)),
     )
-    with pytest.raises(RuntimeError, match="No valid action available"):
-        cli.play_games(num_players=1, printable=False)
+    with pytest.raises(RuntimeError, match="Invalid action Action.NOOP for player Player"):
+        cli.play_games(printable=False)

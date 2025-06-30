@@ -27,31 +27,27 @@ class TestEVCalculator:
             Card("2", "♠")
         ] * 10  # Extra cards for dealer if needed
         service = BlackjackService.create_null(shoe_cards=cards)
-        graph = service.play_games(num_players=1, num_rounds=1, printable=False)
+        graph = service.play_games(num_rounds=1, printable=False)
         result = service.calculate_evs(graph)
 
         # Check that terminal states are initialized with correct payouts
         win_state = TerminalState(Outcome.WIN)
         lose_state = TerminalState(Outcome.LOSE)
         push_state = TerminalState(Outcome.PUSH)
-        bust_state = TerminalState(Outcome.BUST)
         blackjack_state = TerminalState(Outcome.BLACKJACK)
 
         if win_state in result:
-            assert result[win_state].action_evs[Action.GAME_END] == 1.0
-            assert result[win_state].total_count == 1
+            assert result[win_state].action_evs[Action.NOOP] == 1.0
+            assert result[win_state].total_count == 0
         if lose_state in result:
-            assert result[lose_state].action_evs[Action.GAME_END] == -1.0
-            assert result[lose_state].total_count == 1
+            assert result[lose_state].action_evs[Action.NOOP] == -1.0
+            assert result[lose_state].total_count == 0
         if push_state in result:
-            assert result[push_state].action_evs[Action.GAME_END] == 0.0
-            assert result[push_state].total_count == 1
-        if bust_state in result:
-            assert result[bust_state].action_evs[Action.GAME_END] == -1.0
-            assert result[bust_state].total_count == 1
+            assert result[push_state].action_evs[Action.NOOP] == 0.0
+            assert result[push_state].total_count == 0
         if blackjack_state in result:
-            assert result[blackjack_state].action_evs[Action.GAME_END] == 1.5
-            assert result[blackjack_state].total_count == 1
+            assert result[blackjack_state].action_evs[Action.NOOP] == 1.5
+            assert result[blackjack_state].total_count == 0
 
     def test_simple_win_scenario(self):
         # Create a game where player stands with 20, dealer has 19
@@ -62,7 +58,7 @@ class TestEVCalculator:
             Card("10", "♥"),  # Dealer second card (19)
         ]
         service = BlackjackService.create_null(shoe_cards=cards, player_strategy=AlwaysStandStrategy())
-        graph = service.play_games(num_players=1, num_rounds=1, printable=False)
+        graph = service.play_games(num_rounds=1, printable=False)
         result = service.calculate_evs(graph)
 
         # Find the player state with 20 and dealer state
@@ -76,7 +72,7 @@ class TestEVCalculator:
 
         if player_state_20 and dealer_state:
             assert result[player_state_20].optimal_action == Action.STAND
-            assert result[dealer_state].optimal_action == Action.GAME_END
+            assert result[dealer_state].optimal_action == Action.NOOP
 
     def test_simple_loss_scenario(self):
         # Create a game where player stands with 16, dealer has 20
@@ -88,7 +84,7 @@ class TestEVCalculator:
             Card("2", "♠"),  # Extra card for dealer if needed
         ]
         service = BlackjackService.create_null(shoe_cards=cards, player_strategy=AlwaysStandStrategy())
-        graph = service.play_games(num_players=1, num_rounds=1, printable=False)
+        graph = service.play_games(num_rounds=1, printable=False)
         result = service.calculate_evs(graph)
 
         # Find the player state with 16
@@ -111,7 +107,7 @@ class TestEVCalculator:
             Card("10", "♠"),  # Dealer second card
         ]
         service = BlackjackService.create_null(shoe_cards=cards, player_strategy=AlwaysHitStrategy())
-        graph = service.play_games(num_players=1, num_rounds=1, printable=False)
+        graph = service.play_games(num_rounds=1, printable=False)
         result = service.calculate_evs(graph)
 
         # Find the player state with 16
@@ -135,7 +131,7 @@ class TestEVCalculator:
             Card("10", "♠"),  # Dealer second card (needed for complete game)
         ]
         service = BlackjackService.create_null(shoe_cards=cards, player_strategy=AlwaysHitStrategy())
-        graph = service.play_games(num_players=1, num_rounds=1, printable=False)
+        graph = service.play_games(num_rounds=1, printable=False)
         result = service.calculate_evs(graph)
 
         # Find the player state with 20
@@ -160,7 +156,7 @@ class TestEVCalculator:
             Card("2", "♠")
         ] * 10  # Extra cards for dealer if needed
         service = BlackjackService.create_null(shoe_cards=cards)
-        graph = service.play_games(num_players=1, num_rounds=1, printable=False)
+        graph = service.play_games(num_rounds=1, printable=False)
         result = service.calculate_evs(graph)
 
         # Find the blackjack state
@@ -171,8 +167,8 @@ class TestEVCalculator:
                 break
 
         if blackjack_state:
-            assert result[blackjack_state].optimal_action == Action.GAME_END
-            assert result[blackjack_state].action_evs[Action.GAME_END] == 1.5
+            assert result[blackjack_state].optimal_action == Action.NOOP
+            assert result[blackjack_state].action_evs[Action.NOOP] == 1.5
 
     def test_total_count_calculation_for_non_terminal_states(self):
         # Create a simple game scenario to test total_count calculation
@@ -183,7 +179,7 @@ class TestEVCalculator:
             Card("10", "♥"),  # Dealer second card (19)
         ]
         service = BlackjackService.create_null(shoe_cards=cards, player_strategy=AlwaysStandStrategy())
-        graph = service.play_games(num_players=1, num_rounds=1, printable=False)
+        graph = service.play_games(num_rounds=1, printable=False)
         result = service.calculate_evs(graph)
 
         # Find non-terminal states and verify their total_count
@@ -207,7 +203,7 @@ class TestEVCalculator:
             Card("10", "♥"),  # Dealer second card (19)
         ] * 3  # Repeat for 3 rounds
         service = BlackjackService.create_null(shoe_cards=cards, player_strategy=AlwaysStandStrategy())
-        graph = service.play_games(num_players=1, num_rounds=3, printable=False)
+        graph = service.play_games(num_rounds=3, printable=False)
         result = service.calculate_evs(graph)
 
         # Find the player state with 20 and verify its total_count
