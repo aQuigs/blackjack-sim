@@ -6,14 +6,19 @@ import pstats
 import click
 
 from blackjack.blackjack_service import BlackjackService, print_state_transition_graph
+from blackjack.entities.state import GraphState, Turn
 from blackjack.entities.state_transition_graph import StateTransitionGraph
+from blackjack.ev_calculator import StateEV
 
 
-def print_ev_results(state_evs):
+def print_ev_results(state_evs: dict[GraphState, StateEV]) -> None:
     """Print the EV calculation results in a readable format."""
     print("\n=== Expected Value Analysis ===")
 
     for state, state_ev in state_evs.items():
+        if hasattr(state, "turn") and state.turn != Turn.PLAYER:
+            continue
+
         print(f"\nState: {state}")
         print(f"  Optimal Action: {state_ev.optimal_action.name}")
         print(f"  Total Count: {state_ev.total_count}")
