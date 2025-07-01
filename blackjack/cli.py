@@ -9,6 +9,7 @@ from blackjack.blackjack_service import BlackjackService, print_state_transition
 from blackjack.entities.state import GraphState, Turn
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.ev_calculator import StateEV
+from blackjack.turn.action import Action
 
 
 def print_ev_results(state_evs: dict[GraphState, StateEV]) -> None:
@@ -16,7 +17,7 @@ def print_ev_results(state_evs: dict[GraphState, StateEV]) -> None:
     print("\n=== Expected Value Analysis ===")
 
     for state, state_ev in state_evs.items():
-        if hasattr(state, "turn") and state.turn != Turn.PLAYER:
+        if hasattr(state, "turn") and (state.turn != Turn.PLAYER or state_ev.optimal_action == Action.NOOP):
             continue
 
         print(f"\nState: {state}")
