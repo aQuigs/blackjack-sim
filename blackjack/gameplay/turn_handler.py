@@ -10,6 +10,7 @@ from blackjack.game_events import (
     BustEvent,
     ChooseActionEvent,
     DealEvent,
+    DoubleEvent,
     GameEvent,
     HitEvent,
     TwentyOneEvent,
@@ -30,8 +31,9 @@ class Decision(Enum):
     NEXT = auto()
     YES = auto()
     NO = auto()
-    TAKE_CARD = auto()
+    HIT = auto()
     SURRENDER = auto()
+    DOUBLE = auto()
     STAND = auto()
     BUST = auto()
     WINNER = auto()
@@ -152,9 +154,26 @@ class TakeTurnHandler(TurnHandler):
                 )
             )
             if logger.isEnabledFor(logging.INFO):
-                logging.info(f"{actor.name} receives: {card}. New hand: {actor.hand} ({new_hand_value})")
+                logging.info(f"{actor.name} hit and receives: {card}. New hand: {actor.hand} ({new_hand_value})")
 
-            return Decision.TAKE_CARD, (action if self.is_player else Action.NOOP)
+            return Decision.HIT, (action if self.is_player else Action.NOOP)
+        elif action == Action.DOUBLE:
+            card = game_context.shoe.deal_card()
+            actor.hand.add_card(card)
+            new_hand_value = rules.hand_value(actor.hand)
+
+            output_tracker(
+                DoubleEvent(
+                    player=actor.name,
+                    card=card,
+                    new_hand=actor.hand.cards.copy(),
+                    value=new_hand_value.value,
+                )
+            )
+            if logger.isEnabledFor(logging.INFO):
+                logging.info(f"{actor.name} doubles and receives: {card}. New hand: {actor.hand} ({new_hand_value})")
+
+            return Decision.DOUBLE, (action if self.is_player else Action.NOOP)
         else:
             raise RuntimeError(
                 f"Invalid action {action} for player {actor.name} with hand {actor.hand.cards}. "

@@ -21,6 +21,7 @@ class TurnState(Enum):
     CHECK_PLAYER_BJ_PUSH = (CheckPlayerBjHandler(), Turn.SETUP)
     PLAYER_INITIAL_TURN = (TakeTurnHandler(is_player=True), Turn.PLAYER)
     CHECK_PLAYER_CARD_STATE = (CheckPlayerCardStateHandler(is_player=True), Turn.PLAYER)
+    CHECK_PLAYER_CARD_STATE_END_TURN = (CheckPlayerCardStateHandler(is_player=True), Turn.DEALER)
     PLAYER_TURN_CONTINUED = (TakeTurnHandler(is_player=True), Turn.PLAYER)
     DEALER_TURN = (TakeTurnHandler(is_player=False), Turn.DEALER)
     CHECK_DEALER_CARD_STATE = (CheckPlayerCardStateHandler(is_player=False), Turn.DEALER)

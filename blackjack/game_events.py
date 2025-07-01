@@ -14,6 +14,7 @@ class GameEventType(Enum):
     TWENTY_ONE = auto()
     CHOOSE_ACTION = auto()
     HIT = auto()
+    DOUBLE = auto()
     ROUND_RESULT = auto()
 
 
@@ -64,6 +65,15 @@ class HitEvent:
 
 
 @dataclass(frozen=True)
+class DoubleEvent:
+    event_type: ClassVar[GameEventType] = GameEventType.DOUBLE
+    player: str
+    card: Card
+    new_hand: list[Card]
+    value: int
+
+
+@dataclass(frozen=True)
 class PlayerResult:
     name: str
     hand: list[Card]
@@ -79,6 +89,7 @@ class RoundResultEvent:
 
 
 GameEvent = Union[
+    DoubleEvent,
     DealEvent,
     BustEvent,
     BlackjackEvent,

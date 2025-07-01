@@ -4,11 +4,11 @@ from blackjack.entities.state import GraphState
 from blackjack.turn.action import Action
 
 
-def _default_next_state():
+def _default_next_state() -> dict[GraphState, int]:
     return defaultdict(int)
 
 
-def _default_action_transition():
+def _default_action_transition() -> dict[Action, dict[GraphState, int]]:
     return defaultdict(_default_next_state)
 
 
@@ -18,7 +18,7 @@ class StateTransitionGraph:
     Structure: {state: {action: {next_state: count}}}
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.transitions: dict[GraphState, dict[Action, dict[GraphState, int]]] = defaultdict(
             _default_action_transition
         )

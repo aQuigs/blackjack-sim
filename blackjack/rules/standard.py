@@ -1,6 +1,6 @@
 from blackjack.entities.card import Card
 from blackjack.entities.hand import Hand
-from blackjack.entities.state import Outcome
+from blackjack.entities.state import Outcome, Turn
 from blackjack.rules.base import HandValue, Rules
 from blackjack.turn.action import Action
 from blackjack.turn.turn_state import TurnState
@@ -35,11 +35,15 @@ class StandardBlackjackRules(Rules):
         return 1.5
 
     def available_actions(self, turn_state: TurnState) -> list[Action]:
-        if turn_state in [TurnState.PLAYER_INITIAL_TURN, TurnState.PLAYER_TURN_CONTINUED]:
+        if turn_state.turn == Turn.DEALER:
             return [Action.HIT, Action.STAND]
+        elif turn_state.turn == Turn.PLAYER:
+            actions = [Action.HIT, Action.STAND]
 
-        if turn_state == TurnState.DEALER_TURN:
-            return [Action.HIT, Action.STAND]
+            if turn_state == TurnState.PLAYER_INITIAL_TURN:
+                actions.append(Action.DOUBLE)
+
+            return actions
 
         raise RuntimeError(f"Unexpected turn state to choose actions: {turn_state}")
 

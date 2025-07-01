@@ -6,6 +6,10 @@ from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.rules.base import Rules
 from blackjack.turn.action import Action
 
+EV_MULTIPLIER: dict[Action, int] = {
+    Action.DOUBLE: 2,
+}
+
 
 @dataclass(frozen=True)
 class StateEV:
@@ -74,7 +78,7 @@ class EVCalculator:
         total_count = sum(next_states.values())
 
         return sum(
-            self._get_state_ev(next_state, state_evs) * (count / total_count)
+            self._get_state_ev(next_state, state_evs) * (count / total_count) * EV_MULTIPLIER.get(action, 1)
             for next_state, count in next_states.items()
         )
 
