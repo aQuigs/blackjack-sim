@@ -16,3 +16,6 @@ class GameContext:
         self.rules: Rules = rules
         self.dealer: Player = dealer
         self.is_player_turn: bool = True
+
+    def has_split(self):
+        return len(self.player.hands) > 1
