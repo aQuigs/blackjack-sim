@@ -19,6 +19,11 @@ class AlwaysHitStrategy(Strategy):
         return next((a for a in available_actions if a.name == "HIT"), available_actions[0])
 
 
+class AlwaysDoubleStrategy(Strategy):
+    def choose_action(self, hand, available_actions, game_state):
+        return next((a for a in available_actions if a.name == "DOUBLE"), available_actions[0])
+
+
 @pytest.fixture
 def always_stand_strategy():
     return AlwaysStandStrategy()
@@ -27,6 +32,11 @@ def always_stand_strategy():
 @pytest.fixture
 def always_hit_strategy():
     return AlwaysHitStrategy()
+
+
+@pytest.fixture
+def always_double_strategy():
+    return AlwaysDoubleStrategy()
 
 
 @pytest.fixture

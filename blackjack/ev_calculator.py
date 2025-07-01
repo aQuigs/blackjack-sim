@@ -67,6 +67,9 @@ class EVCalculator:
         if not action_evs:
             raise ValueError(f"No actions found for state {state}")
 
+        if Action.NOOP in action_evs and len(action_evs) > 1:
+            raise ValueError(f"State {state} has NOOP action but also other actions. This is a bug. {action_evs=}")
+
         return action_evs
 
     def _calculate_single_action_ev(

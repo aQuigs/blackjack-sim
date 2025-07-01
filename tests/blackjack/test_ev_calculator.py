@@ -4,7 +4,11 @@ from blackjack.entities.state import Outcome, ProperState, TerminalState, Turn
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.rules.standard import StandardBlackjackRules
 from blackjack.turn.action import Action
-from tests.blackjack.conftest import AlwaysHitStrategy, AlwaysStandStrategy
+from tests.blackjack.conftest import (
+    AlwaysDoubleStrategy,
+    AlwaysHitStrategy,
+    AlwaysStandStrategy,
+)
 
 
 class TestEVCalculator:
@@ -222,3 +226,190 @@ class TestEVCalculator:
 
             assert result[player_state_20].total_count == expected_count
             assert result[player_state_20].total_count >= 3  # Should be at least 3
+
+    def test_double_ev_is_doubled_when_winning(self):
+        # Test that double EV is properly doubled when player wins
+        cards = [
+            Card("10", "♠"),  # Player first card
+            Card("9", "♣"),  # Dealer first card
+            Card("5", "♦"),  # Player second card (15 total)
+            Card("8", "♣"),  # Dealer second card (17 total)
+            Card("6", "♥"),  # Player double card (21 total)
+            Card("10", "♠"),  # Extra card for dealer if needed
+        ]
+        service = BlackjackService.create_null(shoe_cards=cards, player_strategy=AlwaysDoubleStrategy())
+        graph = service.play_games(num_rounds=1, printable=False)
+        result = service.calculate_evs(graph)
+
+        # Find the player state with 15 (before doubling)
+        player_state_15 = None
+        for state in result:
+            if isinstance(state, ProperState) and state.player_hand_value == 15 and state.turn == Turn.PLAYER:
+                player_state_15 = state
+                break
+
+        if player_state_15:
+            # Double should be the optimal action
+            assert result[player_state_15].optimal_action == Action.DOUBLE
+            # Double EV should be 2.0 (doubled from 1.0 win)
+            assert result[player_state_15].action_evs[Action.DOUBLE] == 2.0
+
+    def test_double_ev_is_doubled_when_losing(self):
+        # Test that double EV is properly doubled when player loses
+        cards = [
+            Card("10", "♠"),  # Player first card
+            Card("9", "♣"),  # Dealer first card
+            Card("5", "♦"),  # Player second card (15 total)
+            Card("7", "♣"),  # Dealer second card (16 total)
+            Card("5", "♥"),  # Player double card (20 total)
+            Card("5", "♠"),  # Dealer hit card (21 total)
+        ]
+        service = BlackjackService.create_null(shoe_cards=cards, player_strategy=AlwaysDoubleStrategy())
+        graph = service.play_games(num_rounds=1, printable=False)
+        result = service.calculate_evs(graph)
+
+        # Find the player state with 15 (before doubling)
+        player_state_15 = None
+        for state in result:
+            if isinstance(state, ProperState) and state.player_hand_value == 15 and state.turn == Turn.PLAYER:
+                player_state_15 = state
+                break
+
+        if player_state_15:
+            # Double should be the optimal action (even though it loses, it's the only action)
+            assert result[player_state_15].optimal_action == Action.DOUBLE
+            # Double EV should be -2.0 (doubled from -1.0 loss)
+            assert result[player_state_15].action_evs[Action.DOUBLE] == -2.0
+
+    def test_double_ev_is_doubled_when_pushing(self):
+        # Test that double EV is properly doubled when player pushes
+        cards = [
+            Card("10", "♠"),  # Player first card
+            Card("9", "♣"),  # Dealer first card
+            Card("5", "♦"),  # Player second card (15 total)
+            Card("6", "♣"),  # Dealer second card (15 total)
+            Card("6", "♥"),  # Player double card (21 total)
+            Card("6", "♠"),  # Dealer hit card (21 total)
+        ]
+        service = BlackjackService.create_null(shoe_cards=cards, player_strategy=AlwaysDoubleStrategy())
+        graph = service.play_games(num_rounds=1, printable=False)
+        result = service.calculate_evs(graph)
+
+        # Find the player state with 15 (before doubling)
+        player_state_15 = None
+        for state in result:
+            if isinstance(state, ProperState) and state.player_hand_value == 15 and state.turn == Turn.PLAYER:
+                player_state_15 = state
+                break
+
+        if player_state_15:
+            # Double should be the optimal action
+            assert result[player_state_15].optimal_action == Action.DOUBLE
+            # Double EV should be 0.0 (doubled from 0.0 push)
+            assert result[player_state_15].action_evs[Action.DOUBLE] == 0.0
+
+    def test_double_ev_is_doubled_when_busting(self):
+        # Test that double EV is properly doubled when player busts
+        cards = [
+            Card("10", "♠"),  # Player first card
+            Card("9", "♣"),  # Dealer first card
+            Card("5", "♦"),  # Player second card (15 total)
+            Card("8", "♣"),  # Dealer second card (17 total)
+            Card("10", "♥"),  # Player double card (25 total, bust)
+            Card("10", "♠"),  # Extra card for dealer if needed
+        ]
+        service = BlackjackService.create_null(shoe_cards=cards, player_strategy=AlwaysDoubleStrategy())
+        graph = service.play_games(num_rounds=1, printable=False)
+        result = service.calculate_evs(graph)
+
+        # Find the player state with 15 (before doubling)
+        player_state_15 = None
+        for state in result:
+            if isinstance(state, ProperState) and state.player_hand_value == 15 and state.turn == Turn.PLAYER:
+                player_state_15 = state
+                break
+
+        if player_state_15:
+            # Double should be the optimal action (even though it busts, it's the only action)
+            assert result[player_state_15].optimal_action == Action.DOUBLE
+            # Double EV should be -2.0 (doubled from -1.0 bust)
+            assert result[player_state_15].action_evs[Action.DOUBLE] == -2.0
+
+    def test_double_vs_hit_vs_stand_ev_comparison(self):
+        # Test that double EV is properly compared against other actions
+        cards = [
+            Card("10", "♠"),  # Player first card
+            Card("9", "♣"),  # Dealer first card
+            Card("5", "♦"),  # Player second card (15 total)
+            Card("8", "♣"),  # Dealer second card (17 total)
+            Card("6", "♥"),  # Player double card (21 total)
+            Card("4", "♠"),  # Player hit card (19 total)
+            Card("10", "♠"),  # Extra card for dealer if needed
+        ]
+
+        # Create a strategy that can choose between double, hit, and stand
+        class DoubleHitStandStrategy:
+            def choose_action(self, hand, available_actions, game_state):
+                if Action.DOUBLE in available_actions:
+                    return Action.DOUBLE
+                elif Action.HIT in available_actions:
+                    return Action.HIT
+                else:
+                    return Action.STAND
+
+        service = BlackjackService.create_null(shoe_cards=cards, player_strategy=DoubleHitStandStrategy())
+        graph = service.play_games(num_rounds=1, printable=False)
+        result = service.calculate_evs(graph)
+
+        # Find the player state with 15 (before doubling)
+        player_state_15 = None
+        for state in result:
+            if isinstance(state, ProperState) and state.player_hand_value == 15 and state.turn == Turn.PLAYER:
+                player_state_15 = state
+                break
+
+        if player_state_15:
+            # Double should be the optimal action (2.0 EV vs 1.0 for hit to 21)
+            assert result[player_state_15].optimal_action == Action.DOUBLE
+            assert result[player_state_15].action_evs[Action.DOUBLE] == 2.0
+            # Hit should have lower EV than double
+            if Action.HIT in result[player_state_15].action_evs:
+                assert result[player_state_15].action_evs[Action.HIT] < 2.0
+
+    def test_double_ev_multiplier_in_ev_calculator(self):
+        # Test that the EV_MULTIPLIER for DOUBLE is correctly set to 2
+        from blackjack.ev_calculator import EV_MULTIPLIER
+
+        assert EV_MULTIPLIER[Action.DOUBLE] == 2
+
+    def test_double_ev_with_soft_hand(self):
+        # Test double EV with a soft hand
+        cards = [
+            Card("A", "♠"),  # Player first card
+            Card("9", "♣"),  # Dealer first card
+            Card("5", "♦"),  # Player second card (16 total, soft)
+            Card("8", "♣"),  # Dealer second card (17 total)
+            Card("5", "♥"),  # Player double card (21 total)
+            Card("10", "♠"),  # Extra card for dealer if needed
+        ]
+        service = BlackjackService.create_null(shoe_cards=cards, player_strategy=AlwaysDoubleStrategy())
+        graph = service.play_games(num_rounds=1, printable=False)
+        result = service.calculate_evs(graph)
+
+        # Find the player state with 16 (soft, before doubling)
+        player_state_16_soft = None
+        for state in result:
+            if (
+                isinstance(state, ProperState)
+                and state.player_hand_value == 16
+                and state.player_hand_soft
+                and state.turn == Turn.PLAYER
+            ):
+                player_state_16_soft = state
+                break
+
+        if player_state_16_soft:
+            # Double should be the optimal action
+            assert result[player_state_16_soft].optimal_action == Action.DOUBLE
+            # Double EV should be 2.0 (doubled from 1.0 win)
+            assert result[player_state_16_soft].action_evs[Action.DOUBLE] == 2.0
