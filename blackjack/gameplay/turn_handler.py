@@ -79,11 +79,12 @@ class PreDealHandler(TurnHandler):
         return Decision.NEXT, Action.NOOP
 
 
-class CheckDealerAceHandler(TurnHandler):
+class CheckDealerBjPossibleHandler(TurnHandler):
     def handle_turn(
         self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
     ) -> tuple[Decision, Action]:
-        if game_context.dealer.hand.cards[0].rank == "A":
+        upcard = game_context.dealer.hand.cards[0]
+        if upcard.rank == "A" or upcard.is_ten():
             return Decision.YES, Action.NOOP
         else:
             return Decision.NO, Action.NOOP

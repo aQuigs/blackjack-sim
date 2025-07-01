@@ -1,6 +1,7 @@
 class Card:
     SUITS: list[str] = ["♥", "♦", "♣", "♠"]
     RANKS: list[str] = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
+    TEN_RANKS: set[str] = {"10", "J", "Q", "K"}
 
     def __init__(self, rank: str, suit: str) -> None:
         if rank not in Card.RANKS:
@@ -11,6 +12,9 @@ class Card:
 
         self.rank: str = rank
         self.suit: str = suit
+
+    def is_ten(self) -> bool:
+        return self.rank in Card.TEN_RANKS
 
     def __str__(self) -> str:
         return f"{self.rank}{self.suit}"

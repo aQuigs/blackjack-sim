@@ -7,9 +7,9 @@ def blackjack_state_machine():
     return StateMachine(
         {
             TurnState.PRE_DEAL: {
-                Decision.NEXT: TurnState.CHECK_DEALER_ACE,
+                Decision.NEXT: TurnState.CHECK_DEALER_BJ_POSSIBLE,
             },
-            TurnState.CHECK_DEALER_ACE: {
+            TurnState.CHECK_DEALER_BJ_POSSIBLE: {
                 Decision.YES: TurnState.CHECK_DEALER_BLACKJACK,
                 Decision.NO: TurnState.CHECK_PLAYER_BJ_WIN,
             },

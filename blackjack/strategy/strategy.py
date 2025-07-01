@@ -23,7 +23,8 @@ class StandardDealerStrategy(Strategy):
         rules = StandardBlackjackRules()
         hv = rules.hand_value(hand)
 
-        if hv.value < 17 and Action.HIT in available_actions:
+        # Dealer hits on 16 and below, and on soft 17
+        if (hv.value < 17 or (hv.value == 17 and hv.soft)) and Action.HIT in available_actions:
             return Action.HIT
 
         if Action.STAND in available_actions:

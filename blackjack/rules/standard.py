@@ -5,15 +5,13 @@ from blackjack.rules.base import HandValue, Rules
 from blackjack.turn.action import Action
 from blackjack.turn.turn_state import TurnState
 
-TEN_RANKS: set[str] = {"10", "J", "Q", "K"}
-
 
 class StandardBlackjackRules(Rules):
     def hand_value(self, hand: Hand) -> HandValue:
         value: int = 0
         aces: int = 0
         for card in hand.cards:
-            if card.rank in TEN_RANKS:
+            if card.is_ten():
                 value += 10
             elif card.rank == "A":
                 aces += 1
@@ -46,7 +44,7 @@ class StandardBlackjackRules(Rules):
         raise RuntimeError(f"Unexpected turn state to choose actions: {turn_state}")
 
     def translate_upcard(self, upcard: Card) -> str:
-        return "10" if upcard.rank in TEN_RANKS else upcard.rank
+        return "10" if upcard.is_ten() else upcard.rank
 
     def get_outcome_payout(self, outcome: Outcome) -> float:
         if outcome == Outcome.BLACKJACK:

@@ -2,7 +2,7 @@ from enum import Enum
 
 from blackjack.entities.state import Turn
 from blackjack.gameplay.turn_handler import (
-    CheckDealerAceHandler,
+    CheckDealerBjPossibleHandler,
     CheckDealerBlackjackHandler,
     CheckPlayerBjHandler,
     CheckPlayerCardStateHandler,
@@ -15,7 +15,7 @@ from blackjack.gameplay.turn_handler import (
 
 class TurnState(Enum):
     PRE_DEAL = (PreDealHandler(), Turn.PLAYER)
-    CHECK_DEALER_ACE = (CheckDealerAceHandler(), Turn.PLAYER)
+    CHECK_DEALER_BJ_POSSIBLE = (CheckDealerBjPossibleHandler(), Turn.PLAYER)
     CHECK_DEALER_BLACKJACK = (CheckDealerBlackjackHandler(), Turn.PLAYER)
     CHECK_PLAYER_BJ_WIN = (CheckPlayerBjHandler(), Turn.PLAYER)
     CHECK_PLAYER_BJ_PUSH = (CheckPlayerBjHandler(), Turn.PLAYER)
