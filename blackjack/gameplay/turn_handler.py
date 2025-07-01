@@ -86,7 +86,7 @@ class CheckDealerBjPossibleHandler(TurnHandler):
         self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
     ) -> tuple[Decision, Action]:
         upcard = game_context.dealer.hand.cards[0]
-        if upcard.rank == "A" or upcard.is_ten():
+        if upcard.is_ace() or upcard.is_ten():
             return Decision.YES, Action.NOOP
         else:
             return Decision.NO, Action.NOOP

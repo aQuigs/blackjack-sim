@@ -13,6 +13,22 @@ class Card:
         self.rank: str = rank
         self.suit: str = suit
 
+    def is_ace(self) -> bool:
+        return self.rank == "A"
+
+    @property
+    def rank_value(self) -> int:
+        if self.rank in Card.TEN_RANKS:
+            return 10
+        elif self.is_ace():
+            return 11
+        else:
+            return int(self.rank)
+
+    @property
+    def graph_rank(self) -> str:
+        return "10" if self.rank in Card.TEN_RANKS else self.rank
+
     def is_ten(self) -> bool:
         return self.rank in Card.TEN_RANKS
 

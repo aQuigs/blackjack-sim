@@ -1,4 +1,3 @@
-from blackjack.entities.card import Card
 from blackjack.entities.hand import Hand
 from blackjack.entities.state import Outcome, Turn
 from blackjack.rules.base import HandValue, Rules
@@ -14,17 +13,16 @@ class StandardBlackjackRules(Rules):
     def hand_value(self, hand: Hand) -> HandValue:
         value: int = 0
         aces: int = 0
+
         for card in hand.cards:
-            if card.is_ten():
-                value += 10
-            elif card.rank == "A":
+            value += card.rank_value
+            if card.is_ace():
                 aces += 1
-                value += 11
-            else:
-                value += int(card.rank)
+
         while value > 21 and aces:
             value -= 10
             aces -= 1
+
         soft: bool = aces > 0 and value <= 21
         return HandValue(value, soft)
 
@@ -50,9 +48,6 @@ class StandardBlackjackRules(Rules):
             return actions
 
         raise RuntimeError(f"Unexpected turn state to choose actions: {turn_state}")
-
-    def translate_upcard(self, upcard: Card) -> str:
-        return "10" if upcard.is_ten() else upcard.rank
 
     def get_outcome_payout(self, outcome: Outcome) -> float:
         if outcome == Outcome.BLACKJACK:

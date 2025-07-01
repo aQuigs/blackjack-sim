@@ -50,7 +50,7 @@ class Game:
         return ProperState(
             player_hand_value=hand_value.value,
             player_hand_soft=hand_value.soft,
-            dealer_upcard_rank=self.game_context.rules.translate_upcard(self.game_context.dealer.hand.cards[0]),
+            dealer_upcard_rank=self.game_context.dealer.hand.cards[0].graph_rank,
             turn=turn_state.turn,
         )
 
