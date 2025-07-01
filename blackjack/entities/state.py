@@ -45,7 +45,6 @@ class PairState(GraphState):
     """
 
     pair_rank: str
-    split_count: int
     turn: Turn
     dealer_upcard: str
 

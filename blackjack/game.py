@@ -6,6 +6,7 @@ from blackjack.entities.shoe import Shoe
 from blackjack.entities.state import (
     GraphState,
     Outcome,
+    PairState,
     PreDealState,
     ProperState,
     TerminalState,
@@ -46,6 +47,13 @@ class Game:
 
         hand: Hand = self.game_context.player.hand
         hand_value: HandValue = self.game_context.rules.hand_value(hand)
+
+        if hand.is_pair():
+            return PairState(
+                pair_rank=hand.cards[0].graph_rank,
+                turn=turn_state.turn,
+                dealer_upcard=self.game_context.dealer.hand.cards[0].graph_rank,
+            )
 
         return ProperState(
             player_hand_value=hand_value.value,
