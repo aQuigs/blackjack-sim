@@ -7,6 +7,10 @@ from blackjack.turn.turn_state import TurnState
 
 
 class StandardBlackjackRules(Rules):
+    def __init__(self, resplit_aces: bool = False, max_splits: int = 3) -> None:
+        self.resplit_aces: bool = resplit_aces
+        self.max_splits: int = max_splits
+
     def hand_value(self, hand: Hand) -> HandValue:
         value: int = 0
         aces: int = 0
