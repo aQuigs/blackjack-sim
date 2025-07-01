@@ -5,6 +5,8 @@ from typing import Union
 class Turn(Enum):
     PLAYER = auto()
     DEALER = auto()
+    SETUP = auto()
+    FINALIZE = auto()
 
 
 class Outcome(Enum):
