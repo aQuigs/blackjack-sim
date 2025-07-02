@@ -1,6 +1,6 @@
 name: run-pre-commit-checks
 run-name: Running pre-commit checks against all files
-on: [push]
+on: [push, pull_request]
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
