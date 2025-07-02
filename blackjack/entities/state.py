@@ -7,6 +7,7 @@ class Turn(Enum):
     DEALER = auto()
     SETUP = auto()
     FINALIZE = auto()
+    INTERMEDIATE = auto()
 
 
 class Outcome(Enum):
@@ -65,3 +66,15 @@ class PreDealState(GraphState):
     """
 
     pass
+
+
+@dataclass(frozen=True)
+class CompoundState(GraphState):
+    """
+    Represents a state where the player has split and has multiple hands, each represented as a GraphState.
+    """
+
+    active_index: int
+    hand_states: tuple[GraphState, ...]
+    dealer_upcard_rank: str
+    turn: Turn

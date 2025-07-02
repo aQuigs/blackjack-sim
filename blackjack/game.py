@@ -4,6 +4,7 @@ from blackjack.entities.hand import Hand
 from blackjack.entities.player import Player
 from blackjack.entities.shoe import Shoe
 from blackjack.entities.state import (
+    CompoundState,
     GraphState,
     Outcome,
     PairState,
@@ -38,28 +39,39 @@ class Game:
         self.output_tracker = output_tracker or (lambda _: None)
         self.state_transition_graph = state_transition_graph
 
-    def _track(self, event: GameEvent) -> None:
-        self.output_tracker(event)
-
     def _make_graph_state(self, turn_state: TurnState) -> GraphState:
         if turn_state.handler.is_terminal():
             return TerminalState(turn_state.handler.get_outcome(turn_state))
 
-        hand: Hand = self.game_context.player.hand
-        hand_value: HandValue = self.game_context.rules.hand_value(hand)
+        dealer_upcard_rank = self.game_context.dealer.hand.cards[0].graph_rank
+        turn = turn_state.turn
 
+        if not self.game_context.has_split():
+            return self._hand_to_graph_state(self.game_context.player.hand, turn, dealer_upcard_rank)
+
+        hand_states = tuple(
+            self._hand_to_graph_state(hand, turn, dealer_upcard_rank) for hand in self.game_context.player.hands
+        )
+        return CompoundState(
+            active_index=self.game_context.player.active_index,
+            hand_states=hand_states,
+            dealer_upcard_rank=dealer_upcard_rank,
+            turn=turn,
+        )
+
+    def _hand_to_graph_state(self, hand: Hand, turn, dealer_upcard_rank) -> GraphState:
+        hand_value: HandValue = self.game_context.rules.hand_value(hand)
         if hand.is_pair():
             return PairState(
                 pair_rank=hand.cards[0].graph_rank,
-                turn=turn_state.turn,
-                dealer_upcard=self.game_context.dealer.hand.cards[0].graph_rank,
+                turn=turn,
+                dealer_upcard=dealer_upcard_rank,
             )
-
         return ProperState(
             player_hand_value=hand_value.value,
             player_hand_soft=hand_value.soft,
-            dealer_upcard_rank=self.game_context.dealer.hand.cards[0].graph_rank,
-            turn=turn_state.turn,
+            dealer_upcard_rank=dealer_upcard_rank,
+            turn=turn,
         )
 
     def play_round(self) -> StateTransitionGraph:
