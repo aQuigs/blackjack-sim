@@ -5,6 +5,7 @@ from blackjack.entities.player import Player
 from blackjack.entities.shoe import Shoe
 from blackjack.entities.state import (
     CompoundState,
+    CompoundTerminalState,
     GraphState,
     Outcome,
     PairState,
@@ -43,8 +44,11 @@ class Game:
         # if we are in the mixed terminal state, we need to instantiate one
         # for the delta of win/loss (unless it already exists).
         if turn_state.handler.is_terminal():
-            if turn_state != TurnState.GAME_OVER_SPLIT:
-                return TerminalState(turn_state.handler.get_outcome(turn_state))
+            outcomes: list[Outcome] = turn_state.handler.get_outcomes(self.game_context, turn_state)
+            if len(outcomes) == 1:
+                return TerminalState(outcomes[0])
+
+            return CompoundTerminalState(tuple(TerminalState(outcome) for outcome in outcomes))
 
         dealer_upcard_rank = self.game_context.dealer.hand.cards[0].graph_rank
         turn = turn_state.turn
@@ -91,15 +95,13 @@ class Game:
 
             turn_state = next_turn_state
 
-        if not isinstance(graph_state, TerminalState):
+        if not (isinstance(graph_state, TerminalState) or isinstance(graph_state, CompoundTerminalState)):
             raise RuntimeError(f"Final graph state must be terminal, got {graph_state}")
 
-        outcome: Outcome = turn_state.handler.get_outcome(turn_state)
-        self.output_tracker(
-            RoundResultEvent(self.game_context.player.name, self.game_context.player.hand.cards, outcome)
-        )
-        self.output_tracker(
-            RoundResultEvent(self.game_context.dealer.name, self.game_context.dealer.hand.cards, outcome)
-        )
+        outcomes: tuple[Outcome] = turn_state.handler.get_outcomes(self.game_context, turn_state)
+        for hand, outcome in zip(self.game_context.player.hands, outcomes):
+            self.output_tracker(RoundResultEvent(self.game_context.player.name, hand.cards, outcome))
+
+        self.output_tracker(RoundResultEvent(self.game_context.dealer.name, self.game_context.dealer.hand.cards, None))
 
         return self.state_transition_graph

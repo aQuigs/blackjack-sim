@@ -60,6 +60,15 @@ class TerminalState(GraphState):
 
 
 @dataclass(frozen=True)
+class CompoundTerminalState(GraphState):
+    """
+    Represents a terminal state for split hands, holding the terminal state for each hand.
+    """
+
+    terminal_states: tuple[TerminalState, ...]
+
+
+@dataclass(frozen=True)
 class PreDealState(GraphState):
     """
     Represents the state before any cards are dealt.

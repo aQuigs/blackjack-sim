@@ -26,7 +26,11 @@ def blackjack_state_machine():
                 Decision.NO: TurnState.GAME_OVER_LOSE,
             },
             TurnState.DEAL_AFTER_SPLIT: {
-                Decision.NEXT: TurnState.PLAYER_INITIAL_TURN,
+                Decision.NEXT: TurnState.CHECK_SPLIT_21,
+            },
+            TurnState.CHECK_SPLIT_21: {
+                Decision.YES: TurnState.NEXT_SPLIT_HAND,
+                Decision.NO: TurnState.PLAYER_INITIAL_TURN,
             },
             TurnState.PLAYER_INITIAL_TURN: {
                 Decision.HIT: TurnState.CHECK_PLAYER_CARD_STATE,

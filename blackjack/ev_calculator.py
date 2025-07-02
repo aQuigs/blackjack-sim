@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from graphlib import TopologicalSorter
 
-from blackjack.entities.state import GraphState, TerminalState
+from blackjack.entities.state import CompoundTerminalState, GraphState, TerminalState
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.rules.base import Rules
 from blackjack.turn.action import Action
@@ -35,6 +35,14 @@ class EVCalculator:
 
         for state in reversed(sorted_states):
             if isinstance(state, TerminalState):
+                continue
+
+            if isinstance(state, CompoundTerminalState):
+                action_evs = {
+                    Action.NOOP: sum(self.rules.get_outcome_payout(ts.outcome) for ts in state.terminal_states)
+                }
+
+                state_evs[state] = StateEV(Action.NOOP, action_evs, 0)
                 continue
 
             if state not in transitions:

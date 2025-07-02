@@ -55,7 +55,7 @@ class TurnHandler(ABC):
     def is_terminal(self) -> bool:
         return False
 
-    def get_outcome(self, state: "TurnState") -> Outcome:
+    def get_outcomes(self, game_context: GameContext, state: "TurnState") -> list[Outcome]:
         from blackjack.turn.turn_state import TurnState
 
         OUTCOME_MAPPING = {
@@ -65,7 +65,7 @@ class TurnHandler(ABC):
             TurnState.GAME_OVER_PUSH: Outcome.PUSH,
         }
 
-        return OUTCOME_MAPPING.get(state, Outcome.IN_PROGRESS)
+        return [OUTCOME_MAPPING.get(state, Outcome.IN_PROGRESS)]
 
 
 class PreDealHandler(TurnHandler):
@@ -122,11 +122,22 @@ class CheckDealerBlackjackHandler(TurnHandler):
 
 
 class CheckPlayerBjHandler(TurnHandler):
+    def __init__(self, is_split: bool):
+        super().__init__()
+        self.is_split = is_split
+
     def handle_turn(
         self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
     ) -> tuple[Decision, Action]:
         if game_context.rules.is_blackjack(game_context.player.hand):
-            output_tracker(BlackjackEvent(player=game_context.player.name, hand=game_context.player.hand.cards.copy()))
+            if self.is_split:
+                output_tracker(
+                    TwentyOneEvent(player=game_context.player.name, hand=game_context.player.hand.cards.copy())
+                )
+            else:
+                output_tracker(
+                    BlackjackEvent(player=game_context.player.name, hand=game_context.player.hand.cards.copy())
+                )
             return Decision.YES, Action.NOOP
         else:
             return Decision.NO, Action.NOOP
@@ -248,20 +259,20 @@ class NextSplitHandHandler(TurnHandler):
             return Decision.NO, Action.NOOP
 
 
-def determine_hand_outcome(rules: Rules, player_hand: Hand, dealer_hand: Hand) -> Decision:
+def determine_hand_outcome(rules: Rules, player_hand: Hand, dealer_hand: Hand) -> Outcome:
     player_value: int = rules.hand_value(player_hand).value
     dealer_value: int = rules.hand_value(dealer_hand).value
 
     if rules.is_bust(player_hand):
-        return Decision.LOSER
+        return Outcome.LOSE
     elif rules.is_bust(dealer_hand):
-        return Decision.WINNER
+        return Outcome.WIN
     elif player_value > dealer_value:
-        return Decision.WINNER
+        return Outcome.WIN
     elif player_value < dealer_value:
-        return Decision.LOSER
+        return Outcome.LOSE
     else:
-        return Decision.TIE
+        return Outcome.PUSH
 
 
 class EvaluateGameHandler(TurnHandler):
@@ -275,7 +286,18 @@ class EvaluateGameHandler(TurnHandler):
         player: Player = game_context.player
         dealer: Player = game_context.dealer
 
-        return determine_hand_outcome(rules, player.hand, dealer.hand), Action.NOOP
+        outcome: Outcome = determine_hand_outcome(rules, player.hand, dealer.hand)
+
+        if outcome == Outcome.WIN:
+            return Decision.WINNER, Action.NOOP
+        elif outcome == Outcome.LOSE:
+            return Decision.LOSER, Action.NOOP
+        elif outcome == Outcome.PUSH:
+            return Decision.TIE, Action.NOOP
+        else:
+            raise RuntimeError(
+                f"Unexpected outcome {outcome} for player hand {player.hand.cards} and dealer hand {dealer.hand.cards}"
+            )
 
 
 class GameOverHandler(TurnHandler):
@@ -289,19 +311,9 @@ class GameOverHandler(TurnHandler):
 
 
 class GameOverSplitHandler(GameOverHandler):
-    def calculate_delta_wins(self, game_context: GameContext) -> int:
-        outcomes = [
-            determine_hand_outcome(game_context.rules, hand, game_context.dealer.hand)
-            for hand in game_context.player.hands
-        ]
-        total = 0
-        for outcome in outcomes:
-            if outcome == Decision.WINNER:
-                total += 1
-            elif outcome == Decision.LOSER:
-                total -= 1
-            elif outcome == Decision.TIE:
-                total += 0
-            else:
-                raise RuntimeError(f"Unexpected outcome: {outcome}")
-        return total
+    def get_outcomes(self, game_context: GameContext, state: "TurnState") -> list[Outcome]:
+        rules: Rules = game_context.rules
+        player: Player = game_context.player
+        dealer: Player = game_context.dealer
+
+        return [determine_hand_outcome(rules, hand, dealer.hand) for hand in player.hands]
