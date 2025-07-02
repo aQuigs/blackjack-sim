@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Callable
 
+from blackjack.entities.hand import Hand
 from blackjack.entities.player import Player
 from blackjack.entities.state import Outcome
 from blackjack.game_events import (
@@ -39,6 +40,7 @@ class Decision(Enum):
     WINNER = auto()
     LOSER = auto()
     TIE = auto()
+    MIX = auto()
 
 
 class TurnHandler(ABC):
@@ -77,6 +79,21 @@ class PreDealHandler(TurnHandler):
             card = game_context.shoe.deal_card()
             game_context.dealer.hand.add_card(card)
             output_tracker(DealEvent(to=game_context.dealer.name, card=card))
+
+        return Decision.NEXT, Action.NOOP
+
+
+class DealAfterSplitHandler(TurnHandler):
+    def handle_turn(
+        self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
+    ) -> tuple[Decision, Action]:
+        if not game_context.has_split():
+            raise RuntimeError("DealAfterSplitHandler called without a split in progress")
+
+        while len(game_context.player.hand.cards) < 2:
+            card = game_context.shoe.deal_card()
+            game_context.player.hand.add_card(card)
+            output_tracker(DealEvent(to=game_context.player.name, card=card))
 
         return Decision.NEXT, Action.NOOP
 
@@ -124,6 +141,10 @@ class TakeTurnHandler(TurnHandler):
     ) -> tuple[Decision, Action]:
         rules: Rules = game_context.rules
         actor: Player = game_context.player if self.is_player else game_context.dealer
+
+        # Skip dealer's turn if all players are busted
+        if not self.is_player and all(rules.is_bust(hand) for hand in game_context.player.hands):
+            return Decision.STAND, Action.NOOP
 
         actions = rules.available_actions(state)
         if not actions:
@@ -207,19 +228,47 @@ class CheckPlayerCardStateHandler(TurnHandler):
         return Decision.NEXT, Action.NOOP
 
 
+class NextSplitHandHandler(TurnHandler):
+    def handle_turn(
+        self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
+    ) -> tuple[Decision, Action]:
+        game_context.player.active_index += 1
+        if game_context.player.active_index < len(game_context.player.hands):
+            return Decision.YES, Action.NOOP
+        else:
+            # Reset for easy evaluation
+            game_context.player.active_index = 0
+            return Decision.NO, Action.NOOP
+
+
+def determine_hand_outcome(rules: Rules, player_hand: Hand, dealer_hand: Hand) -> Decision:
+    player_value: int = rules.hand_value(player_hand).value
+    dealer_value: int = rules.hand_value(dealer_hand).value
+
+    if rules.is_bust(player_hand):
+        return Decision.LOSER
+    elif rules.is_bust(dealer_hand):
+        return Decision.WINNER
+    elif player_value > dealer_value:
+        return Decision.WINNER
+    elif player_value < dealer_value:
+        return Decision.LOSER
+    else:
+        return Decision.TIE
+
+
 class EvaluateGameHandler(TurnHandler):
     def handle_turn(
         self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
     ) -> tuple[Decision, Action]:
-        player_value: int = game_context.rules.hand_value(game_context.player.hand).value
-        dealer_value: int = game_context.rules.hand_value(game_context.dealer.hand).value
+        if game_context.has_split():
+            return Decision.MIX, Action.NOOP
 
-        if player_value > dealer_value:
-            return Decision.WINNER, Action.NOOP
-        elif player_value < dealer_value:
-            return Decision.LOSER, Action.NOOP
-        else:
-            return Decision.TIE, Action.NOOP
+        rules: Rules = game_context.rules
+        player: Player = game_context.player
+        dealer: Player = game_context.dealer
+
+        return determine_hand_outcome(rules, player.hand, dealer.hand), Action.NOOP
 
 
 class GameOverHandler(TurnHandler):
@@ -230,3 +279,22 @@ class GameOverHandler(TurnHandler):
 
     def is_terminal(self) -> bool:
         return True
+
+
+class GameOverSplitHandler(GameOverHandler):
+    def calculate_delta_wins(self, game_context: GameContext) -> int:
+        outcomes = [
+            determine_hand_outcome(game_context.rules, hand, game_context.dealer.hand)
+            for hand in game_context.player.hands
+        ]
+        total = 0
+        for outcome in outcomes:
+            if outcome == Decision.WINNER:
+                total += 1
+            elif outcome == Decision.LOSER:
+                total -= 1
+            elif outcome == Decision.TIE:
+                total += 0
+            else:
+                raise RuntimeError(f"Unexpected outcome: {outcome}")
+        return total

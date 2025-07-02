@@ -6,8 +6,11 @@ from blackjack.gameplay.turn_handler import (
     CheckDealerBlackjackHandler,
     CheckPlayerBjHandler,
     CheckPlayerCardStateHandler,
+    DealAfterSplitHandler,
     EvaluateGameHandler,
     GameOverHandler,
+    GameOverSplitHandler,
+    NextSplitHandHandler,
     PreDealHandler,
     TakeTurnHandler,
 )
@@ -19,13 +22,16 @@ class TurnState(Enum):
     CHECK_DEALER_BLACKJACK = (CheckDealerBlackjackHandler(), Turn.SETUP)
     CHECK_PLAYER_BJ_WIN = (CheckPlayerBjHandler(), Turn.SETUP)
     CHECK_PLAYER_BJ_PUSH = (CheckPlayerBjHandler(), Turn.SETUP)
+    DEAL_AFTER_SPLIT = (DealAfterSplitHandler(), Turn.SETUP)
     PLAYER_INITIAL_TURN = (TakeTurnHandler(is_player=True), Turn.PLAYER)
     CHECK_PLAYER_CARD_STATE = (CheckPlayerCardStateHandler(is_player=True), Turn.PLAYER)
     CHECK_PLAYER_CARD_STATE_END_TURN = (CheckPlayerCardStateHandler(is_player=True), Turn.DEALER)
     PLAYER_TURN_CONTINUED = (TakeTurnHandler(is_player=True), Turn.PLAYER)
+    NEXT_SPLIT_HAND = (NextSplitHandHandler(), Turn.SETUP)
     DEALER_TURN = (TakeTurnHandler(is_player=False), Turn.DEALER)
     CHECK_DEALER_CARD_STATE = (CheckPlayerCardStateHandler(is_player=False), Turn.DEALER)
     EVALUATE_GAME = (EvaluateGameHandler(), Turn.FINALIZE)
+    GAME_OVER_SPLIT = (GameOverSplitHandler(), Turn.FINALIZE)
     GAME_OVER_WIN = (GameOverHandler(), Turn.FINALIZE)
     GAME_OVER_BJ = (GameOverHandler(), Turn.FINALIZE)
     GAME_OVER_LOSE = (GameOverHandler(), Turn.FINALIZE)
