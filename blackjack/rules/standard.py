@@ -36,7 +36,7 @@ class StandardBlackjackRules(Rules):
     def blackjack_payout(self) -> float:
         return 1.5
 
-    def available_actions(self, turn_state: TurnState) -> list[Action]:
+    def available_actions(self, turn_state: TurnState, is_pair: bool, split_count_so_far: int) -> list[Action]:
         if turn_state.turn == Turn.DEALER:
             return [Action.HIT, Action.STAND]
         elif turn_state.turn == Turn.PLAYER:
@@ -44,6 +44,9 @@ class StandardBlackjackRules(Rules):
 
             if turn_state == TurnState.PLAYER_INITIAL_TURN:
                 actions.append(Action.DOUBLE)
+
+            if is_pair and split_count_so_far < self.max_splits:
+                actions.append(Action.SPLIT)
 
             return actions
 

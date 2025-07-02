@@ -35,6 +35,7 @@ class Decision(Enum):
     HIT = auto()
     SURRENDER = auto()
     DOUBLE = auto()
+    SPLIT = auto()
     STAND = auto()
     BUST = auto()
     WINNER = auto()
@@ -146,7 +147,7 @@ class TakeTurnHandler(TurnHandler):
         if not self.is_player and all(rules.is_bust(hand) for hand in game_context.player.hands):
             return Decision.STAND, Action.NOOP
 
-        actions = rules.available_actions(state)
+        actions = rules.available_actions(state, actor.hand.is_pair(), len(actor.hands) - 1)
         if not actions:
             raise RuntimeError(
                 f"No valid actions available for {actor.name} with hand {actor.hand.cards}. "
@@ -195,6 +196,12 @@ class TakeTurnHandler(TurnHandler):
                 logging.info(f"{actor.name} doubles and receives: {card}. New hand: {actor.hand} ({new_hand_value})")
 
             return Decision.DOUBLE, (action if self.is_player else Action.NOOP)
+        elif action == Action.SPLIT:
+            if not actor.hand.is_pair():
+                raise RuntimeError(f"Cannot split hand {actor.hand.cards} as it is not a pair.")
+
+            actor.split_active_hand()
+            return Decision.SPLIT, Action.SPLIT
         else:
             raise RuntimeError(
                 f"Invalid action {action} for player {actor.name} with hand {actor.hand.cards}. "

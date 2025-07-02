@@ -32,6 +32,7 @@ def blackjack_state_machine():
                 Decision.HIT: TurnState.CHECK_PLAYER_CARD_STATE,
                 Decision.SURRENDER: TurnState.GAME_OVER_SURRENDER,
                 Decision.DOUBLE: TurnState.CHECK_PLAYER_CARD_STATE_END_TURN,
+                Decision.SPLIT: TurnState.DEAL_AFTER_SPLIT,
                 Decision.STAND: TurnState.NEXT_SPLIT_HAND,
             },
             TurnState.CHECK_PLAYER_CARD_STATE: {

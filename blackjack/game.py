@@ -40,8 +40,11 @@ class Game:
         self.state_transition_graph = state_transition_graph
 
     def _make_graph_state(self, turn_state: TurnState) -> GraphState:
+        # if we are in the mixed terminal state, we need to instantiate one
+        # for the delta of win/loss (unless it already exists).
         if turn_state.handler.is_terminal():
-            return TerminalState(turn_state.handler.get_outcome(turn_state))
+            if turn_state != TurnState.GAME_OVER_SPLIT:
+                return TerminalState(turn_state.handler.get_outcome(turn_state))
 
         dealer_upcard_rank = self.game_context.dealer.hand.cards[0].graph_rank
         turn = turn_state.turn
