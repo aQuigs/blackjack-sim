@@ -5,8 +5,7 @@ from blackjack.entities.hand import Hand
 from blackjack.entities.player import Player
 from blackjack.entities.shoe import Shoe
 from blackjack.entities.state import (
-    CompoundState,
-    CompoundTerminalState,
+    SplitState,
     GraphState,
     NewSplitHandState,
     Outcome,
@@ -113,7 +112,7 @@ class Game:
                     min_split_count=split_count,
                 )
 
-                self.state_transition_graph.add_transition(graph_states[graph_index], action, [next_graph_state, later_graph_state])
+                self.state_transition_graph.add_transition(graph_states[graph_index], action, SplitState(next_graph_state, later_graph_state))
                 graph_states.append(later_graph_state)
                 graph_states[graph_index] = next_graph_state
             else:

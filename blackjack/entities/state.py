@@ -92,3 +92,9 @@ class CompoundState(GraphState):
     hand_states: tuple[GraphState, ...]
     dealer_upcard_rank: str
     turn: Turn
+
+
+@dataclass(frozen=True)
+class CompositeState(GraphState):
+    first_hand_state: NewSplitHandState
+    second_hand_state: PendingSplitHandState

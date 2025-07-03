@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from graphlib import TopologicalSorter
 
-from blackjack.entities.state import CompoundTerminalState, GraphState, TerminalState
+from blackjack.entities.state import SplitState, GraphState, TerminalState
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.rules.base import Rules
 from blackjack.turn.action import Action
@@ -37,10 +37,11 @@ class EVCalculator:
             if isinstance(state, TerminalState):
                 continue
 
-            if isinstance(state, CompoundTerminalState):
-                action_evs = {
-                    Action.NOOP: sum(self.rules.get_outcome_payout(ts.outcome) for ts in state.terminal_states)
-                }
+            if isinstance(state, SplitState):
+                # For composite states, calculate EV as the sum of both component states
+                state1_ev = self._get_state_ev(state.first_hand_state, state_evs)
+                state2_ev = self._get_state_ev(state.second_hand_state, state_evs)
+                action_evs = {Action.NOOP: state1_ev + state2_ev}
 
                 state_evs[state] = StateEV(Action.NOOP, action_evs, 0)
                 continue
@@ -108,6 +109,11 @@ class EVCalculator:
                 for next_state in next_states:
                     all_states.add(next_state)
                     sorter.add(next_state, state)
+
+                    # Ensure CompositeState is processed after its component states
+                    if isinstance(next_state, SplitState):
+                        sorter.add(next_state, next_state.first_hand_state)
+                        sorter.add(next_state, next_state.second_hand_state)
 
         # Ensure all states are added (even if they have no outgoing edges)
         for state in all_states:
