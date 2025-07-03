@@ -6,9 +6,10 @@ from blackjack.turn.turn_state import TurnState
 
 
 class StandardBlackjackRules(Rules):
-    def __init__(self, resplit_aces: bool = False, max_splits: int = 3) -> None:
+    def __init__(self, resplit_aces: bool = False, play_split_aces: bool = False, max_splits: int = 3) -> None:
         self.resplit_aces: bool = resplit_aces
         self.max_splits: int = max_splits
+        self.play_split_aces: bool = play_split_aces
 
     def hand_value(self, hand: Hand) -> HandValue:
         value: int = 0
@@ -36,17 +37,22 @@ class StandardBlackjackRules(Rules):
     def blackjack_payout(self) -> float:
         return 1.5
 
-    def available_actions(self, turn_state: TurnState, is_pair: bool, split_count_so_far: int) -> list[Action]:
+    def available_actions(self, turn_state: TurnState, hand: Hand, split_count_so_far: int) -> list[Action]:
         if turn_state.turn == Turn.DEALER:
             return [Action.HIT, Action.STAND]
         elif turn_state.turn == Turn.PLAYER:
-            actions = [Action.HIT, Action.STAND]
+            actions = [Action.STAND]
+            pair: bool = hand.is_pair()
 
-            if turn_state == TurnState.PLAYER_INITIAL_TURN:
-                actions.append(Action.DOUBLE)
+            if split_count_so_far == 0 or not hand.cards[0].is_ace() or self.play_split_aces:
+                actions.append(Action.HIT)
 
-            if is_pair and split_count_so_far < self.max_splits:
-                actions.append(Action.SPLIT)
+                if turn_state == TurnState.PLAYER_INITIAL_TURN:
+                    actions.append(Action.DOUBLE)
+
+            if pair and split_count_so_far < self.max_splits:
+                if split_count_so_far == 0 or not hand.cards[0].is_ace() or self.resplit_aces:
+                    actions.append(Action.SPLIT)
 
             return actions
 

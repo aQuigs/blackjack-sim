@@ -130,7 +130,7 @@ class CheckPlayerBjHandler(TurnHandler):
         self, state: "TurnState", game_context: GameContext, output_tracker: Callable[[GameEvent], None]
     ) -> tuple[Decision, Action]:
         if game_context.rules.is_blackjack(game_context.player.hand):
-            if self.is_split:
+            if self.is_split:  # Blackjack after a split is only a 21
                 output_tracker(
                     TwentyOneEvent(player=game_context.player.name, hand=game_context.player.hand.cards.copy())
                 )
@@ -158,7 +158,7 @@ class TakeTurnHandler(TurnHandler):
         if not self.is_player and all(rules.is_bust(hand) for hand in game_context.player.hands):
             return Decision.STAND, Action.NOOP
 
-        actions = rules.available_actions(state, actor.hand.is_pair(), len(actor.hands) - 1)
+        actions = rules.available_actions(state, actor.hand, len(actor.hands) - 1)
         if not actions:
             raise RuntimeError(
                 f"No valid actions available for {actor.name} with hand {actor.hand.cards}. "

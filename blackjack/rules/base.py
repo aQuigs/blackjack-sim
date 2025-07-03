@@ -36,7 +36,7 @@ class Rules:
     def blackjack_payout(self) -> float:
         raise NotImplementedError  # pragma: nocover
 
-    def available_actions(self, turn_state: "TurnState", is_pair: bool, split_count_so_far: int) -> list[Action]:
+    def available_actions(self, turn_state: "TurnState", hand: Hand, split_count_so_far: int) -> list[Action]:
         raise NotImplementedError  # pragma: nocover
 
     def get_outcome_payout(self, outcome: Outcome) -> float:
