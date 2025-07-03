@@ -15,6 +15,7 @@ from blackjack.entities.state import (
     PreDealState,
     ProperState,
     TerminalState,
+    Turn,
 )
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.game_events import GameEvent, RoundResultEvent
@@ -86,30 +87,30 @@ class Game:
 
     def play_round(self) -> StateTransitionGraph:
         turn_state: TurnState = TurnState.PRE_DEAL
-        graph_state: GraphState = PreDealState()
-        pending_split_stack: list[PendingSplitHandState] = []
-        split_source_nodes: list[GraphState] = []
+        graph_states: list[GraphState] = [PreDealState()]
+        graph_index: int = 0
 
         while not turn_state.handler.is_terminal():
             decision, action = turn_state.handler.handle_turn(turn_state, self.game_context, self.output_tracker)
             next_turn_state: TurnState = self.state_machine.transition(turn_state, decision)
 
-            if turn_state == TurnState.NEXT_SPLIT_HAND and self.game_context.has_split():
-                # add a node to node for moving to the state as if the decision was no
-                # if decision was yes, pop from stack and transition to a NewSPlitHandState. set that to graph_state
-                # add the latest to the split_source_nodes
-                # then, if decision is yes we move forward
-                # if decision is no we also move fwd
-                # so just turn_state = next_turn_state
+            player_card = self.game_context.player.hand.cards[0].graph_rank
+            dealer_upcard_rank = self.game_context.dealer.hand.cards[0].graph_rank
+            split_count = len(self.game_context.player.hands) - 1
 
-                pass
+            if turn_state == TurnState.NEXT_SPLIT_HAND and decision == Decision.YES:
+                assert self.game_context.has_split(), "Expected game context to have a split given transitioning to next hand"
 
-            elif decision == Decision.SPLIT:
-                player_card = self.game_context.player.hand.cards[0].graph_rank
-                dealer_upcard_rank = self.game_context.dealer.hand.cards[0].graph_rank
-                split_count = len(self.game_context.player.hands) - 1
-
+                graph_index += 1
                 next_graph_state: GraphState = NewSplitHandState(
+                    player_card=player_card,
+                    dealer_upcard_rank=dealer_upcard_rank,
+                    split_count=split_count,
+                )
+                self.state_transition_graph.add_transition(graph_states[graph_index], action, next_graph_state)
+                graph_states[graph_index] = next_graph_state
+            elif decision == Decision.SPLIT:
+                next_graph_state = NewSplitHandState(
                     player_card=player_card,
                     dealer_upcard_rank=dealer_upcard_rank,
                     split_count=split_count,
@@ -121,32 +122,58 @@ class Game:
                     min_split_count=split_count,
                 )
 
-                pending_split_stack.append(later_graph_state)
-                self.state_transition_graph.add_transition(graph_state, action, [next_graph_state, later_graph_state])
-                graph_state = next_graph_state
-            elif decision == Decision.MIX:
-                # terminal outcome thing
-                pass
+                self.state_transition_graph.add_transition(graph_states[graph_index], action, [next_graph_state, later_graph_state])
+                graph_states.append(later_graph_state)
+                graph_states[graph_index] = next_graph_state
             else:
                 next_graph_state = self._make_graph_state(next_turn_state)
-                if next_graph_state != graph_state:
-                    self.state_transition_graph.add_transition(graph_state, action, next_graph_state)
-                    graph_state = next_graph_state
+
+                if next_turn_state.turn != Turn.DEALER:
+                    if next_graph_state != graph_states[graph_index]:
+                        self.state_transition_graph.add_transition(graph_states[graph_index], action, next_graph_state)
+                        graph_state = next_graph_state
+
+                    continue
+
+                for i, source_node in enumerate(graph_states):
+                    if isinstance(source_node, TerminalState):
+                        continue
+
+                    # TODO: should we only count this once per unique transition?
+                    if next_graph_state != graph_states[graph_index]:
+                        self.state_transition_graph.add_transition(graph_states[i], action, next_graph_state)
+                        graph_states[i] = next_graph_state
 
             turn_state = next_turn_state
 
         if not (isinstance(graph_state, TerminalState) or isinstance(graph_state, CompoundTerminalState)):
             raise RuntimeError(f"Final graph state must be terminal, got {graph_state}")
 
-        outcomes: tuple[Outcome] = turn_state.handler.get_outcomes(self.game_context, turn_state)
-        for hand, outcome in zip(self.game_context.player.hands, outcomes):
-            self.output_tracker(RoundResultEvent(self.game_context.player.name, hand.cards, outcome))
+        player: Player = self.game_context.player
+        outcomes: list[Outcome] = turn_state.handler.get_outcomes(self.game_context, turn_state)
+        assert len(outcomes) == len(graph_states) == len(player.hands), "Mismatch in outcomes and graph states length"
+
+        for i, outcome in enumerate(outcomes):
+            source_state = graph_states[i]
+            if isinstance(source_state, TerminalState):
+                if source_state.outcome != outcome:
+                    raise RuntimeError(
+                        f"Graph state {source_state} already has outcome {source_state.outcome}, "
+                        f"but got new outcome {outcome}"
+                    )
+
+                continue
+
+            terminal_state: TerminalState = TerminalState(outcome)
+            self.state_transition_graph.add_transition(graph_states[i], action, terminal_state)
+            self.output_tracker(RoundResultEvent(player.name, player.hands[i].cards, outcome))
+            graph_states[i] = terminal_state
 
         self.output_tracker(RoundResultEvent(self.game_context.dealer.name, self.game_context.dealer.hand.cards, None))
 
-        assert len(pending_split_stack) == 0, f"Pending split stack should be empty at the end of a round, got {pending_split_stack}"
-        assert all(isinstance(state, TerminalState) for state in split_source_nodes), (
-            f"All split source nodes should be terminal states at the end of a round, got: {split_source_nodes}"
+        assert graph_index == len(graph_states), f"Graph index {graph_index} should match the length of graph states {len(graph_states)}"
+        assert all(isinstance(state, TerminalState) for state in graph_states), (
+            f"All split source nodes should be terminal states at the end of a round, got: {graph_states}"
         )
 
         return self.state_transition_graph
