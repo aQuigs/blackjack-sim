@@ -49,26 +49,17 @@ class Game:
         # for the delta of win/loss (unless it already exists).
         if turn_state.handler.is_terminal():
             outcomes: list[Outcome] = turn_state.handler.get_outcomes(self.game_context, turn_state)
-            if len(outcomes) == 1:
-                return TerminalState(outcomes[0])
+            if len(outcomes) != 1:
+                raise RuntimeError(
+                    f"Expected exactly one outcome for terminal state, got: {outcomes}"
+                )
 
-            return CompoundTerminalState(tuple(TerminalState(outcome) for outcome in outcomes))
+            return TerminalState(outcomes[0])
 
         dealer_upcard_rank = self.game_context.dealer.hand.cards[0].graph_rank
         turn = turn_state.turn
 
-        if not self.game_context.has_split():
-            return self._hand_to_graph_state(self.game_context.player.hand, turn, dealer_upcard_rank)
-
-        hand_states = tuple(
-            self._hand_to_graph_state(hand, turn, dealer_upcard_rank) for hand in self.game_context.player.hands
-        )
-        return CompoundState(
-            active_index=self.game_context.player.active_index,
-            hand_states=hand_states,
-            dealer_upcard_rank=dealer_upcard_rank,
-            turn=turn,
-        )
+        return self._hand_to_graph_state(self.game_context.player.hand, turn, dealer_upcard_rank)
 
     def _hand_to_graph_state(self, hand: Hand, turn, dealer_upcard_rank) -> GraphState:
         hand_value: HandValue = self.game_context.rules.hand_value(hand)
@@ -131,7 +122,7 @@ class Game:
                 if next_turn_state.turn != Turn.DEALER:
                     if next_graph_state != graph_states[graph_index]:
                         self.state_transition_graph.add_transition(graph_states[graph_index], action, next_graph_state)
-                        graph_state = next_graph_state
+                        graph_states[graph_index] = next_graph_state
 
                     continue
 
@@ -145,9 +136,6 @@ class Game:
                         graph_states[i] = next_graph_state
 
             turn_state = next_turn_state
-
-        if not (isinstance(graph_state, TerminalState) or isinstance(graph_state, CompoundTerminalState)):
-            raise RuntimeError(f"Final graph state must be terminal, got {graph_state}")
 
         player: Player = self.game_context.player
         outcomes: list[Outcome] = turn_state.handler.get_outcomes(self.game_context, turn_state)
