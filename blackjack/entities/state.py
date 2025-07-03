@@ -69,6 +69,20 @@ class CompoundTerminalState(GraphState):
 
 
 @dataclass(frozen=True)
+class PendingSplitHandState(GraphState):
+    player_card: str
+    dealer_upcard_rank: str
+    min_split_count: int
+
+
+@dataclass(frozen=True)
+class NewSplitHandState(GraphState):
+    player_card: str
+    dealer_upcard_rank: str
+    split_count: int
+
+
+@dataclass(frozen=True)
 class PreDealState(GraphState):
     """
     Represents the state before any cards are dealt.
