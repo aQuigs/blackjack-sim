@@ -72,3 +72,13 @@ class StandardBlackjackRules(Rules):
 
     def get_possible_outcomes(self) -> list[Outcome]:
         return [Outcome.WIN, Outcome.LOSE, Outcome.PUSH, Outcome.BLACKJACK]
+
+    def get_viable_actions(self, previous_action):
+        if previous_action == Action.HIT:
+            return {Action.HIT, Action.STAND}
+        elif previous_action == Action.DOUBLE:
+            return set(Action.STAND)
+        elif previous_action == Action.SPLIT:
+            return {Action.HIT, Action.STAND, Action.DOUBLE, Action.SPLIT}
+        else:
+            return set()

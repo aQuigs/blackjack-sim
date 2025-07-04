@@ -44,3 +44,6 @@ class Rules:
 
     def get_possible_outcomes(self) -> list[Outcome]:
         raise NotImplementedError  # pragma: nocover
+
+    def get_viable_actions(self, previous_action):
+        raise NotImplementedError

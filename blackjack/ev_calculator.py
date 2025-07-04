@@ -44,8 +44,8 @@ class EVCalculator:
             if isinstance(state, SplitState):
                 # For split states, calculate EV as the sum of both hands states
                 action_evs = {
-                    Action.NOOP: self._get_state_ev(state.first_hand_state, state_evs)
-                    + self._get_state_ev(state.second_hand_state, state_evs)
+                    Action.NOOP: self._get_state_ev(state.first_hand_state, state_evs, Action.SPLIT)
+                    + self._get_state_ev(state.second_hand_state, state_evs, Action.SPLIT)
                 }
                 state_evs[state] = StateEV(Action.NOOP, action_evs, 0)
                 continue
@@ -94,14 +94,23 @@ class EVCalculator:
         total_count = sum(next_states.values())
 
         return sum(
-            self._get_state_ev(next_state, state_evs) * (count / total_count) * EV_MULTIPLIER.get(action, 1)
+            self._get_state_ev(next_state, state_evs, action) * (count / total_count) * EV_MULTIPLIER.get(action, 1)
             for next_state, count in next_states.items()
         )
 
-    def _get_state_ev(self, state: GraphState, state_evs: dict[GraphState, StateEV]) -> float:
+    def _get_state_ev(self, state: GraphState, state_evs: dict[GraphState, StateEV], action: Action) -> float:
         assert state in state_evs, f"Next state {state} not found in state_evs. This is a bug."
         state_ev = state_evs[state]
-        return state_ev.action_evs[state_ev.optimal_action]
+        if action == Action.NOOP or state_ev.optimal_action == Action.NOOP:
+            return state_ev.action_evs[state_ev.optimal_action]
+
+        allowed_actions: set[Action] = self.rules.get_viable_actions(action)
+        allowed_action_evs = {a: ev for a, ev in state_ev.action_evs.items() if a in allowed_actions}
+        if not allowed_action_evs:
+            raise RuntimeError(f"No allowed actions for state {state} after previous action {action}")
+
+        best_action = max(allowed_action_evs, key=lambda a: allowed_action_evs[a])
+        return allowed_action_evs[best_action]
 
     def _topological_sort(self, transitions: dict[GraphState, dict[Action, dict[GraphState, int]]]) -> list[GraphState]:
         sorter: TopologicalSorter = TopologicalSorter()
