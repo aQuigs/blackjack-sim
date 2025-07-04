@@ -26,7 +26,7 @@ class TurnState(Enum):
     CHECK_SPLIT_21 = (CheckPlayerBjHandler(is_split=True), Turn.SETUP)
     PLAYER_INITIAL_TURN = (TakeTurnHandler(is_player=True), Turn.PLAYER)
     CHECK_PLAYER_CARD_STATE = (CheckPlayerCardStateHandler(is_player=True), Turn.PLAYER)
-    CHECK_PLAYER_CARD_STATE_END_TURN = (CheckPlayerCardStateHandler(is_player=True), Turn.INTERMEDIATE)
+    CHECK_PLAYER_CARD_STATE_END_TURN = (CheckPlayerCardStateHandler(is_player=True), Turn.POST_DOUBLE)
     PLAYER_TURN_CONTINUED = (TakeTurnHandler(is_player=True), Turn.PLAYER)
     NEXT_SPLIT_HAND = (NextSplitHandHandler(), Turn.INTERMEDIATE)
     DEALER_TURN = (TakeTurnHandler(is_player=False), Turn.DEALER)

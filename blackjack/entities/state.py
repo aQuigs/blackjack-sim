@@ -8,6 +8,7 @@ class Turn(Enum):
     SETUP = auto()
     FINALIZE = auto()
     INTERMEDIATE = auto()
+    POST_DOUBLE = auto()
 
 
 class Outcome(Enum):
@@ -37,7 +38,6 @@ class ProperState(GraphState):
     player_hand_soft: bool
     dealer_upcard_rank: str
     turn: Turn
-    split_count: int
 
 
 @dataclass(frozen=True)

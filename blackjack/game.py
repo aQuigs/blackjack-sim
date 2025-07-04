@@ -43,7 +43,7 @@ class Game:
         self.output_tracker = output_tracker or (lambda _: None)
         self.state_transition_graph = state_transition_graph
 
-    def _make_graph_state(self, turn_state: TurnState) -> GraphState:
+    def _make_graph_state(self, player_hand: Hand, turn_state: TurnState) -> GraphState:
         # if we are in the mixed terminal state, we need to instantiate one
         # for the delta of win/loss (unless it already exists).
         if turn_state.handler.is_terminal():
@@ -56,7 +56,7 @@ class Game:
         dealer_upcard_rank = self.game_context.dealer.hand.cards[0].graph_rank
         turn = turn_state.turn
 
-        return self._hand_to_graph_state(self.game_context.player.hand, turn, dealer_upcard_rank)
+        return self._hand_to_graph_state(player_hand, turn, dealer_upcard_rank)
 
     def _hand_to_graph_state(self, hand: Hand, turn, dealer_upcard_rank) -> GraphState:
         hand_value: HandValue = self.game_context.rules.hand_value(hand)
@@ -72,7 +72,6 @@ class Game:
             player_hand_soft=hand_value.soft,
             dealer_upcard_rank=dealer_upcard_rank,
             turn=turn,
-            split_count=len(self.game_context.player.hands) - 1,
         )
 
     def play_round(self) -> StateTransitionGraph:
@@ -123,9 +122,9 @@ class Game:
                 turn_state = next_turn_state
                 continue  # we will compute terminal states below
             else:
-                next_graph_state = self._make_graph_state(next_turn_state)
 
-                if next_turn_state.turn != Turn.DEALER:
+                if next_turn_state.turn != Turn.DEALER and next_turn_state != TurnState.EVALUATE_GAME:
+                    next_graph_state = self._make_graph_state(self.game_context.player.hand, next_turn_state)
                     if next_graph_state != graph_states[graph_index]:
                         self.state_transition_graph.add_transition(graph_states[graph_index], action, next_graph_state)
                         graph_states[graph_index] = next_graph_state
@@ -134,11 +133,12 @@ class Game:
                     continue
 
                 for i, source_node in enumerate(graph_states):
+                    next_graph_state = self._make_graph_state(self.game_context.player.hands[i], next_turn_state)
                     if isinstance(source_node, TerminalState):
                         continue
 
                     # TODO: should we only count this once per unique transition?
-                    if next_graph_state != graph_states[graph_index]:
+                    if next_graph_state != graph_states[i]:
                         self.state_transition_graph.add_transition(graph_states[i], action, next_graph_state)
                         graph_states[i] = next_graph_state
 
