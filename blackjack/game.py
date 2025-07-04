@@ -1,12 +1,9 @@
 from typing import Callable, Optional
 
-from blackjack.gameplay import game_context
-from blackjack.gameplay.turn_handler import Decision
 from blackjack.entities.hand import Hand
 from blackjack.entities.player import Player
 from blackjack.entities.shoe import Shoe
 from blackjack.entities.state import (
-    SplitState,
     GraphState,
     NewSplitHandState,
     Outcome,
@@ -14,12 +11,14 @@ from blackjack.entities.state import (
     PendingSplitHandState,
     PreDealState,
     ProperState,
+    SplitState,
     TerminalState,
     Turn,
 )
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.game_events import GameEvent, RoundResultEvent
 from blackjack.gameplay.game_context import GameContext
+from blackjack.gameplay.turn_handler import Decision
 from blackjack.rules.base import HandValue, Rules
 from blackjack.strategy.base import Strategy
 from blackjack.turn.state_machine import StateMachine
@@ -50,9 +49,7 @@ class Game:
         if turn_state.handler.is_terminal():
             outcomes: list[Outcome] = turn_state.handler.get_outcomes(self.game_context, turn_state)
             if len(outcomes) != 1:
-                raise RuntimeError(
-                    f"Expected exactly one outcome for terminal state {turn_state}, got: {outcomes}"
-                )
+                raise RuntimeError(f"Expected exactly one outcome for terminal state {turn_state}, got: {outcomes}")
 
             return TerminalState(outcomes[0])
 
@@ -92,7 +89,9 @@ class Game:
             split_count = len(self.game_context.player.hands) - 1
 
             if turn_state == TurnState.NEXT_SPLIT_HAND and decision == Decision.YES:
-                assert self.game_context.has_split(), "Expected game context to have a split given transitioning to next hand"
+                assert (
+                    self.game_context.has_split()
+                ), "Expected game context to have a split given transitioning to next hand"
 
                 graph_index += 1
                 next_graph_state: GraphState = NewSplitHandState(
@@ -115,7 +114,9 @@ class Game:
                     min_split_count=split_count,
                 )
 
-                self.state_transition_graph.add_transition(graph_states[graph_index], action, SplitState(next_graph_state, later_graph_state))
+                self.state_transition_graph.add_transition(
+                    graph_states[graph_index], action, SplitState(next_graph_state, later_graph_state)
+                )
                 graph_states.append(later_graph_state)
                 graph_states[graph_index] = next_graph_state
             elif next_turn_state == TurnState.GAME_OVER_SPLIT:
@@ -145,7 +146,9 @@ class Game:
 
         player: Player = self.game_context.player
         outcomes: list[Outcome] = turn_state.handler.get_outcomes(self.game_context, turn_state)
-        assert len(outcomes) == len(graph_states) == len(player.hands), f"Mismatch in outcomes and graph states length {turn_state=} {outcomes=} {graph_states=} {player.hands=}"
+        assert (
+            len(outcomes) == len(graph_states) == len(player.hands)
+        ), f"Mismatch in outcomes and graph states length {turn_state=} {outcomes=} {graph_states=} {player.hands=}"
 
         for i, outcome in enumerate(outcomes):
             source_state = graph_states[i]
@@ -166,9 +169,11 @@ class Game:
 
         self.output_tracker(RoundResultEvent(self.game_context.dealer.name, self.game_context.dealer.hand.cards, None))
 
-        assert graph_index == len(graph_states) - 1, f"Graph index {graph_index} should match the length of graph states {len(graph_states)}"
-        assert all(isinstance(state, TerminalState) for state in graph_states), (
-            f"All split source nodes should be terminal states at the end of a round, got: {graph_states}"
-        )
+        assert (
+            graph_index == len(graph_states) - 1
+        ), f"Graph index {graph_index} should match the length of graph states {len(graph_states)}"
+        assert all(
+            isinstance(state, TerminalState) for state in graph_states
+        ), f"All split source nodes should be terminal states at the end of a round, got: {graph_states}"
 
         return self.state_transition_graph

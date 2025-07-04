@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from enum import Enum, auto
-from re import split
 
 
 class Turn(Enum):

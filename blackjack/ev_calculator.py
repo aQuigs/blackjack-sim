@@ -1,7 +1,11 @@
 from dataclasses import dataclass
 from graphlib import TopologicalSorter
 
-from blackjack.entities.state import SplitState, GraphState, TerminalState, NewSplitHandState, PendingSplitHandState
+from blackjack.entities.state import (
+    GraphState,
+    SplitState,
+    TerminalState,
+)
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.rules.base import Rules
 from blackjack.turn.action import Action
@@ -39,7 +43,10 @@ class EVCalculator:
 
             if isinstance(state, SplitState):
                 # For split states, calculate EV as the sum of both hands states
-                action_evs = {Action.NOOP: self._get_state_ev(state.first_hand_state, state_evs) + self._get_state_ev(state.second_hand_state, state_evs)}
+                action_evs = {
+                    Action.NOOP: self._get_state_ev(state.first_hand_state, state_evs)
+                    + self._get_state_ev(state.second_hand_state, state_evs)
+                }
                 state_evs[state] = StateEV(Action.NOOP, action_evs, 0)
                 continue
 
