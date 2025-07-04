@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum, auto
+from re import split
 
 
 class Turn(Enum):
@@ -37,6 +38,7 @@ class ProperState(GraphState):
     player_hand_soft: bool
     dealer_upcard_rank: str
     turn: Turn
+    split_count: int
 
 
 @dataclass(frozen=True)
@@ -48,6 +50,7 @@ class PairState(GraphState):
     pair_rank: str
     turn: Turn
     dealer_upcard: str
+    split_count: int
 
 
 @dataclass(frozen=True)

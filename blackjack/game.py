@@ -68,12 +68,14 @@ class Game:
                 pair_rank=hand.cards[0].graph_rank,
                 turn=turn,
                 dealer_upcard=dealer_upcard_rank,
+                split_count=len(self.game_context.player.hands) - 1,
             )
         return ProperState(
             player_hand_value=hand_value.value,
             player_hand_soft=hand_value.soft,
             dealer_upcard_rank=dealer_upcard_rank,
             turn=turn,
+            split_count=len(self.game_context.player.hands) - 1,
         )
 
     def play_round(self) -> StateTransitionGraph:

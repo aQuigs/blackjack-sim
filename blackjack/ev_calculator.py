@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from graphlib import TopologicalSorter
 
-from blackjack.entities.state import SplitState, GraphState, TerminalState
+from blackjack.entities.state import SplitState, GraphState, TerminalState, NewSplitHandState, PendingSplitHandState
 from blackjack.entities.state_transition_graph import StateTransitionGraph
 from blackjack.rules.base import Rules
 from blackjack.turn.action import Action
@@ -107,10 +107,10 @@ class EVCalculator:
                     all_states.add(next_state)
                     sorter.add(next_state, state)
 
-                    # Ensure CompositeState is processed after its component states
+                    # Ensure SplitState is processed after its component states
                     if isinstance(next_state, SplitState):
-                        sorter.add(next_state, next_state.first_hand_state)
-                        sorter.add(next_state, next_state.second_hand_state)
+                        sorter.add(next_state.first_hand_state, next_state)
+                        sorter.add(next_state.second_hand_state, next_state)
 
         # Ensure all states are added (even if they have no outgoing edges)
         for state in all_states:
