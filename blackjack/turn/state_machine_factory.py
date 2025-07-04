@@ -63,7 +63,7 @@ def blackjack_state_machine():
             },
             TurnState.CHECK_DEALER_CARD_STATE: {
                 Decision.NEXT: TurnState.DEALER_TURN,
-                Decision.BUST: TurnState.GAME_OVER_WIN,
+                Decision.BUST: TurnState.EVALUATE_GAME,
                 Decision.STAND: TurnState.EVALUATE_GAME,
             },
             TurnState.EVALUATE_GAME: {

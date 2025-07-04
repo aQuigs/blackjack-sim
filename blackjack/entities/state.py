@@ -95,6 +95,6 @@ class CompoundState(GraphState):
 
 
 @dataclass(frozen=True)
-class CompositeState(GraphState):
+class SplitState(GraphState):
     first_hand_state: NewSplitHandState
     second_hand_state: PendingSplitHandState

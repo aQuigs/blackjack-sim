@@ -38,11 +38,8 @@ class EVCalculator:
                 continue
 
             if isinstance(state, SplitState):
-                # For composite states, calculate EV as the sum of both component states
-                state1_ev = self._get_state_ev(state.first_hand_state, state_evs)
-                state2_ev = self._get_state_ev(state.second_hand_state, state_evs)
-                action_evs = {Action.NOOP: state1_ev + state2_ev}
-
+                # For split states, calculate EV as the sum of both hands states
+                action_evs = {Action.NOOP: self._get_state_ev(state.first_hand_state, state_evs) + self._get_state_ev(state.second_hand_state, state_evs)}
                 state_evs[state] = StateEV(Action.NOOP, action_evs, 0)
                 continue
 

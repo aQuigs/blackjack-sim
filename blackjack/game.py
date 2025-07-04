@@ -1,5 +1,6 @@
 from typing import Callable, Optional
 
+from blackjack.gameplay import game_context
 from blackjack.gameplay.turn_handler import Decision
 from blackjack.entities.hand import Hand
 from blackjack.entities.player import Player
@@ -50,7 +51,7 @@ class Game:
             outcomes: list[Outcome] = turn_state.handler.get_outcomes(self.game_context, turn_state)
             if len(outcomes) != 1:
                 raise RuntimeError(
-                    f"Expected exactly one outcome for terminal state, got: {outcomes}"
+                    f"Expected exactly one outcome for terminal state {turn_state}, got: {outcomes}"
                 )
 
             return TerminalState(outcomes[0])
@@ -115,6 +116,9 @@ class Game:
                 self.state_transition_graph.add_transition(graph_states[graph_index], action, SplitState(next_graph_state, later_graph_state))
                 graph_states.append(later_graph_state)
                 graph_states[graph_index] = next_graph_state
+            elif next_turn_state == TurnState.GAME_OVER_SPLIT:
+                turn_state = next_turn_state
+                continue  # we will compute terminal states below
             else:
                 next_graph_state = self._make_graph_state(next_turn_state)
 
@@ -123,6 +127,7 @@ class Game:
                         self.state_transition_graph.add_transition(graph_states[graph_index], action, next_graph_state)
                         graph_states[graph_index] = next_graph_state
 
+                    turn_state = next_turn_state
                     continue
 
                 for i, source_node in enumerate(graph_states):
@@ -138,7 +143,7 @@ class Game:
 
         player: Player = self.game_context.player
         outcomes: list[Outcome] = turn_state.handler.get_outcomes(self.game_context, turn_state)
-        assert len(outcomes) == len(graph_states) == len(player.hands), "Mismatch in outcomes and graph states length"
+        assert len(outcomes) == len(graph_states) == len(player.hands), f"Mismatch in outcomes and graph states length {turn_state=} {outcomes=} {graph_states=} {player.hands=}"
 
         for i, outcome in enumerate(outcomes):
             source_state = graph_states[i]
@@ -149,6 +154,7 @@ class Game:
                         f"but got new outcome {outcome}"
                     )
 
+                self.output_tracker(RoundResultEvent(player.name, player.hands[i].cards, outcome))
                 continue
 
             terminal_state: TerminalState = TerminalState(outcome)
@@ -158,7 +164,7 @@ class Game:
 
         self.output_tracker(RoundResultEvent(self.game_context.dealer.name, self.game_context.dealer.hand.cards, None))
 
-        assert graph_index == len(graph_states), f"Graph index {graph_index} should match the length of graph states {len(graph_states)}"
+        assert graph_index == len(graph_states) - 1, f"Graph index {graph_index} should match the length of graph states {len(graph_states)}"
         assert all(isinstance(state, TerminalState) for state in graph_states), (
             f"All split source nodes should be terminal states at the end of a round, got: {graph_states}"
         )
