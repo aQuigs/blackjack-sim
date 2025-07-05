@@ -1,7 +1,9 @@
 import concurrent.futures
 import cProfile
 import logging
+import pickle
 import pstats
+from typing import Optional
 
 import click
 
@@ -25,7 +27,7 @@ def print_ev_results(state_evs: dict[GraphState, StateEV]) -> None:
         print(f"  Total Count: {state_ev.total_count}")
         print("  Action EVs:")
         for action, ev in state_ev.action_evs.items():
-            print(f"    {action.name}: {ev:.4f}")
+            print(f"    {action.name}: {ev:.8f}")
 
 
 def run_batch(
@@ -53,9 +55,12 @@ def run_parallel_batches(
     no_shuffle_between: bool,
     no_print: bool,
     parallel: int,
-) -> StateTransitionGraph:
+    main_graph: StateTransitionGraph,
+) -> None:
     if parallel == 1 or num_rounds == 1:
-        return run_batch(num_decks, num_rounds, not no_shuffle_between, not no_print)
+        graph = run_batch(num_decks, num_rounds, not no_shuffle_between, not no_print)
+        main_graph.merge(graph)
+        return
 
     base_batch = num_rounds // parallel
     remainder = num_rounds % parallel
@@ -66,10 +71,24 @@ def run_parallel_batches(
     with concurrent.futures.ProcessPoolExecutor(max_workers=parallel) as executor:
         graphs = list(executor.map(run_batch_with_args, args_list))
 
-    main_graph = graphs[0]
-    for g in graphs[1:]:
+    for g in graphs:
         main_graph.merge(g)
-    return main_graph
+
+
+def import_graph(input_file: Optional[str]) -> StateTransitionGraph:
+    if not input_file:
+        return StateTransitionGraph()
+
+    with open(input_file, "rb") as f:
+        return pickle.load(f)
+
+
+def export_graph(graph: StateTransitionGraph, output_file: Optional[str]) -> None:
+    if not output_file:
+        return
+
+    with open(output_file, "wb") as f:
+        return pickle.dump(graph, f)
 
 
 @click.command()
@@ -78,8 +97,8 @@ def run_parallel_batches(
     "--num-rounds",
     default=1,
     show_default=True,
-    type=click.IntRange(1, 1000000000),
-    help="Number of rounds to play (1-1000000000).",
+    type=click.IntRange(0, 1000000000),
+    help="Number of rounds to play (0-1000000000).",
 )
 @click.option("--no-shuffle-between", is_flag=True, help="Don't shuffle the shoe between rounds.")
 @click.option("--no-print", is_flag=True, help="Disable printing of hands and results.")
@@ -95,7 +114,19 @@ def run_parallel_batches(
     is_flag=True,
     help="Enable profiling and save results to profile_results.prof.",
 )
-def main(num_decks, num_rounds, no_shuffle_between, no_print, parallel, profile):
+@click.option(
+    "--graph-output-file",
+    default=None,
+    help="File to write the graph to",
+)
+@click.option(
+    "--graph-input-file",
+    default=None,
+    help="File to read the starting graph from",
+)
+def main(
+    num_decks, num_rounds, no_shuffle_between, no_print, parallel, profile, graph_output_file, graph_input_file
+) -> None:
     """Run a blackjack simulation from the command line."""
     logging.basicConfig(level=logging.ERROR if no_print else logging.DEBUG, format="%(message)s")
 
@@ -109,12 +140,19 @@ def main(num_decks, num_rounds, no_shuffle_between, no_print, parallel, profile)
             profiler.enable()
 
         try:
-            main_graph = run_parallel_batches(
+            main_graph: StateTransitionGraph = import_graph(graph_input_file)
+            if not no_print:
+                print("--START INITIAL GRAPH--")
+                print_state_transition_graph(main_graph)
+                print("--END INITIAL GRAPH--")
+
+            run_parallel_batches(
                 num_decks=num_decks,
                 num_rounds=num_rounds,
                 no_shuffle_between=no_shuffle_between,
                 no_print=no_print,
                 parallel=parallel,
+                main_graph=main_graph,
             )
         finally:
             if profile:
@@ -126,6 +164,8 @@ def main(num_decks, num_rounds, no_shuffle_between, no_print, parallel, profile)
 
             stats.dump_stats("profile_results.prof")
             print("Profile data saved to: profile_results.prof")
+
+        export_graph(main_graph, graph_output_file)
 
         if not no_print:
             print_state_transition_graph(main_graph)
